@@ -16,15 +16,13 @@ streamer = stream.Streamer(data['stream']['port'])
 width = int(net.yml_data['stream']['line'])
 fpsCounter = fps.FPS()
 
-
-for i in range(1000):
+while True:
     fpsCounter.reset()
     fpsCounter.start()
     if net.update_exposure:
         visionCamera.updateExposure(net)
         net.update_exposure = False
-    # A new image is available if grab() returns SUCCESS
-    frame = visionCamera.read()
+    frame = visionCamera.frame
     if net.vision_use:
         cv2.imwrite('/home/jetson/ZodiacVision/capture/' + time.strftime("%Y%m%d-%H%M%S") + '.png', frame)
         net.vision_use = False
@@ -33,9 +31,11 @@ for i in range(1000):
         continue
     contour = detector.findTarget(mask)
     stream_image = detector.postProcess(frame, contour)
-    fpsCounter.update()
-    fpsCounter.stop()
-    stream_image = fps.putIterationsPerSec(stream_image, fpsCounter.fps())
+
+    # fpsCounter.update()
+    # fpsCounter.stop()
+    # print(fpsCounter.elapsed())
+    # stream_image = fps.putIterationsPerSec(stream_image, fpsCounter.fps())
 
     if net.line:
         width = int(net.yml_data['stream']['line'])
