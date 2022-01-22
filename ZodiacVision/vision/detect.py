@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import yaml
 import math
 
@@ -9,6 +10,13 @@ class Detector:
         self.nt = nt
         self.camera = camera
 
+    def gammaCorrection(self, src, gamma):
+        invGamma = 1 / gamma
+
+        table = [((i / 255) ** invGamma) * 255 for i in range(256)]
+        table = np.array(table, np.uint8)
+
+        return cv2.LUT(src, table)
     def preProcessFrame(self, frame):
         lower = self.nt.yml_data['color']['lower']
         upper = self.nt.yml_data['color']['upper']

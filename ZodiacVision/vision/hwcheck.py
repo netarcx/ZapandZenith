@@ -1,4 +1,3 @@
-
 class HWCheck:
     def __init__(self):
         pass
