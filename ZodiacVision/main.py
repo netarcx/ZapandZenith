@@ -2,7 +2,7 @@ import cv2
 import yaml
 import socketserver
 
-from vision import networktables, camera, detect, stream, fps, socketserver
+from vision import networktables, camera, detect, stream, fps
 import time
 path = 'vision.yml'
 with open(path, 'r') as file:
@@ -35,7 +35,7 @@ class VisionDispatcher(socketserver.BaseRequestHandler):
         center_x, center_y, distance = -1, -1, -1
         if mask.all() != -1: # if -1 - give them that, let the client handle
             contour, center_x, center_y = detector.findTarget(mask)
-            distance = camera.findTargetDistance(center_x, center_y)
+            distance = visionCamera.findTargetDistance(center_x, center_y)
 
         msg = self.request.recv(1024).strip()
         self.dispatchResponse(msg, center_x, center_y, distance)
@@ -46,18 +46,24 @@ class VisionDispatcher(socketserver.BaseRequestHandler):
         self.request.sendall(msg.encode())
 
     def dispatchResponse(self, msg, center_x, center_y, distance):
-        if msg == 'distance':
+        print("|"+str(msg)+"|")
+
+        center_x = str(center_x)
+        center_y = str(center_y)
+        distance = str(distance)
+
+        if msg == b'distance':
             self.reply(("distance|"+distance+"\n"))
-        elif msg == 'center_x':
+        elif msg == b'center_x':
             self.reply("center_x|"+center_x+"\n")
-        elif msg == 'cxy':
+        elif msg == b'cxy':
             self.reply(""+center_x+","+center_y)
-        elif msg == 'cxd':
+        elif msg == b'cxd':
             self.reply(""+center_x+","+center_y+","+distance)
         else:
             self.reply('error|invalid request\n')
         
-    def getMask():
+    def getMask(self):
         fpsCounter.reset()
         fpsCounter.start()
         if net.update_exposure:

@@ -1,13 +1,11 @@
 import socket
+import sys
 
-Vision = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-Vision.connect(('192.168.68.118', 1180))
-
+address = ('localhost', 5802)
+data = ''.join(sys.argv[1:])
 while True:
-    from_client = ''
-    from_server = b''
-    send = b''
-    send += input('Send Command: ').encode()
-    Vision.sendall(send)
-    from_server = Vision.recv(1024)
-    print(repr(from_server))
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect(address)
+        s.sendall(bytes(data + input('Enter Command: '), "utf-8"))
+        received = str(s.recv(1024), "utf-8")
+        print(received)
