@@ -2,9 +2,9 @@ import cv2
 import yaml
 import socketserver
 
-from vision import networktables, camera, detect, stream, fps
+from vision import networktables, camera, detect, fps
 import time
-path = 'vision.yml'
+path = 'ZodiacVision/vision.yml'
 with open(path, 'r') as file:
     data = yaml.safe_load(file)
 # print(data)
@@ -31,6 +31,12 @@ fpsCounter = fps.FPS()
 
 class VisionDispatcher(socketserver.BaseRequestHandler):
     def handle(self):
+        while True:
+            res = self.handleOne()
+            if res == False:
+                break
+
+    def handleOne(self):
         mask = self.getMask()
         center_x, center_y, distance = -1, -1, -1
         if mask.all() != -1: # if -1 - give them that, let the client handle
@@ -38,6 +44,8 @@ class VisionDispatcher(socketserver.BaseRequestHandler):
             distance = visionCamera.findTargetDistance(center_x, center_y)
 
         msg = self.request.recv(1024).strip()
+        if not msg:
+            return False
         self.dispatchResponse(msg, center_x, center_y, distance)
         fpsCounter.update()
         fpsCounter.stop()
@@ -46,8 +54,6 @@ class VisionDispatcher(socketserver.BaseRequestHandler):
         self.request.sendall(msg.encode())
 
     def dispatchResponse(self, msg, center_x, center_y, distance):
-        print("|"+str(msg)+"|")
-
         center_x = str(center_x)
         center_y = str(center_y)
         distance = str(distance)
@@ -79,5 +85,5 @@ class VisionDispatcher(socketserver.BaseRequestHandler):
 
 port = net.yml_data['main']['port']
 
-with socketserver.TCPServer(('localhost', port), VisionDispatcher) as server:
+with socketserver.ThreadingTCPServer(('localhost', port), VisionDispatcher) as server:
     server.serve_forever()
