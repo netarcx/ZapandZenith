@@ -4,7 +4,7 @@ import socketserver
 
 from vision import networktables, camera, detect, fps
 import time
-path = 'ZodiacVision/vision.yml'
+path = 'vision.yml'
 with open(path, 'r') as file:
     data = yaml.safe_load(file)
 # print(data)
