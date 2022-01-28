@@ -8,11 +8,13 @@ import yaml
 import cv2
 import math
 
+gstreamer = True
 class Camera:
     def __init__(self):
         self.hw = hwcheck.HWCheck()
         self.frame = np.zeros((100,100,3), np.uint8)
         self.isZed = self.hw.CheckZed()
+        print(self.isZed)
         path = 'vision.yml'
         with open(path, 'r') as file:
             data = yaml.safe_load(file)
@@ -37,7 +39,10 @@ class Camera:
             self.zed.set_camera_settings(sl.VIDEO_SETTINGS.EXPOSURE, data['camera']['exposure'])
             self.runtime_parameters = sl.RuntimeParameters()
         else:
-            self.cap = cv2.VideoCapture(0)
+            if not gstreamer:
+                self.cap = cv2.VideoCapture(0)
+            else:
+                self.cap = cv2.VideoCapture("shmsrc socket-path=/tmp/foo ! video/x-raw, format=BGRx, width=672, height=376, framerate=100/1 ! videoconvert ! appsink drop=1", cv2.CAP_GSTREAMER)
         self.thread = Thread(target=self.read, args=())
         self.thread.daemon = True
         self.thread.start()
