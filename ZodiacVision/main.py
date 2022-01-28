@@ -29,29 +29,34 @@ fpsCounter = fps.FPS()
     # else:
     #     streamer.write(stream_image)
 
-class VisionDispatcher(socketserver.BaseRequestHandler):
+class VisionDispatcher(socketserver.StreamRequestHandler):
     def handle(self):
-        while True:
-            res = self.handleOne()
-            if res == False:
-                break
+        # print("Got connection from", self.client_address)
+        try:
+            for line in self.rfile:
+            # print("Got line:", line)
+                self.handleOne(line.rstrip())
+        except:
+            # this throws when the client disconnects
+            print("Client disconnected")
 
-    def handleOne(self):
+    def handleOne(self, msg):
         mask = self.getMask()
         center_x, center_y, distance = -1, -1, -1
         if mask.all() != -1: # if -1 - give them that, let the client handle
             contour, center_x, center_y = detector.findTarget(mask)
             distance = visionCamera.findTargetDistance(center_x, center_y)
 
-        msg = self.request.recv(1024).strip()
-        if not msg:
-            return False
         self.dispatchResponse(msg, center_x, center_y, distance)
+        
         fpsCounter.update()
         fpsCounter.stop()
 
     def reply(self, msg):
-        self.request.sendall(msg.encode())
+        try: # crashes if client disconnects
+            self.request.sendall((msg + "\n").encode())
+        except: 
+            return None
 
     def dispatchResponse(self, msg, center_x, center_y, distance):
         center_x = str(center_x)
@@ -67,7 +72,7 @@ class VisionDispatcher(socketserver.BaseRequestHandler):
         elif msg == b'cxd':
             self.reply(""+center_x+","+center_y+","+distance)
         else:
-            self.reply('error|invalid request\n')
+            self.reply('error|invalid request')
         
     def getMask(self):
         fpsCounter.reset()
