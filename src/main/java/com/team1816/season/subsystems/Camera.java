@@ -28,7 +28,7 @@ public class Camera extends Subsystem {
     private Socket socket;
     private BufferedReader socketIn;
     private PrintWriter socketOut;
-    private Boolean usingVision = false;
+    private Boolean usingVision = true;
     private long needsReconnect = 0;
 
     public Camera() {
@@ -48,11 +48,12 @@ public class Camera extends Subsystem {
 
     private boolean socketConnect() {
         try {
-            socket = new Socket();
-            socket.connect(new InetSocketAddress(InetAddress.getLocalHost(), 5802), 10);
+            socket = new Socket("10.18.16.16", 5802);
+            //socket.connect(new InetSocketAddress("10.18.16.16", 5802), 10);
             socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             socketOut = new PrintWriter(socket.getOutputStream(), true);
         } catch (IOException e) {
+            System.out.println(e.getMessage());
             needsReconnect = System.currentTimeMillis();
             return false;
         }
@@ -63,8 +64,9 @@ public class Camera extends Subsystem {
         if (!usingVision) return 0;
         try {
             String line = query("center_x");
-            String coord = line.split(PROTOCOL_LINE)[1];
-            double x = Double.parseDouble(coord);
+            String[] coords = line.split(PROTOCOL_LINE);
+            if (coords.length < 2) return 0;
+            double x = Double.parseDouble(coords[1]);
             if (x < 0) {
                 // Reset deltaX to 0 if contour not detected
                 return 0;
@@ -81,13 +83,13 @@ public class Camera extends Subsystem {
         if (!usingVision) return 0;
         try {
             String line = query("distance");
+            System.out.println(line + " = LINE VALUE");
             String[] parts = line.split(PROTOCOL_LINE);
             if (parts.length < 2) {
                 return 0;
             }
             return Double.parseDouble(parts[1]);
         } catch (IOException e) {
-            //System.out.println("CAMERA EXCEPTION GET DISTANCE LINE 89: " + e);
             needsReconnect = System.currentTimeMillis();
             return 0;
         }
@@ -97,8 +99,8 @@ public class Camera extends Subsystem {
         if (!usingVision) return 0;
         try {
             String line = query("center_x");
-            String coord = line.split(PROTOCOL_LINE)[1];
-            return Double.parseDouble(coord);
+            String[] coords = line.split(PROTOCOL_LINE);
+            return Double.parseDouble(coords[1]);
         } catch (IOException e) {
             needsReconnect = System.currentTimeMillis();
             return 0;

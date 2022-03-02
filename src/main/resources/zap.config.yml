@@ -135,21 +135,21 @@ subsystems:
         solenoids:
             deployer: 2
     elevator:
-        implemented: false
+        implemented: true
         talons:
             elevator: 32
         constants:
             ballSensor: 0
     spindexer:
-        implemented: false
+        implemented: true
         talons:
             spindexer: 31
         solenoids:
             feederFlap: -1
     hopper:
-        implemented: false
+        implemented: true
     collector:
-        implemented: false
+        implemented: true
         sparkmaxes:
             intake: 23
         invertMotor:
@@ -180,7 +180,7 @@ constants:
     heading_kD: 0
     heading_kF: 0
     ## Logging ##
-    logTeleOp: 1 # 0 or 1
+    logTeleOp: 0 # 0 or 1
     logAuto: 1 # 0 or 1
     badLogEnabled: 1 # 0 or 1
     configStatusFrames: 0 # 0 or 1

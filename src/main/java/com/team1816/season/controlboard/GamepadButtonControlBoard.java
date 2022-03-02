@@ -89,7 +89,7 @@ public class GamepadButtonControlBoard implements IButtonControlBoard {
 
     @Override
     public boolean getRevShooter() {// currently not used
-        return mController.getTrigger(Controller.Axis.RIGHT_TRIGGER);
+        return mController.getTrigger(Controller.Axis.LEFT_TRIGGER);
     }
 
     @Override
@@ -99,6 +99,6 @@ public class GamepadButtonControlBoard implements IButtonControlBoard {
 
     @Override
     public boolean getShoot() { // This Shoot Method Fires and Revs currently.
-        return mController.getTrigger(Controller.Axis.LEFT_TRIGGER);
+        return mController.getTrigger(Controller.Axis.RIGHT_TRIGGER);
     }
 }
