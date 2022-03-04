@@ -155,6 +155,10 @@ public class Orchestrator extends Subsystem {
         spindexer.setState(Spindexer.SPIN_STATE.FIRE);
     }
 
+    public void setElevatorFiring() {
+        elevator.setState(Elevator.ELEVATOR_STATE.FIRING);
+    }
+
     public double getDistance(DistanceManager.SUBSYSTEM subsystem) {
         System.out.println("CAMERA DISTANCE Line 163" + distanceManager.getOutput(camera.getDistance(), subsystem));
         return distanceManager.getOutput(camera.getDistance(), subsystem);
