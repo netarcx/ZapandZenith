@@ -92,7 +92,7 @@ public class DistanceManager {
             case HOOD:
                 return getHoodRetracted(distance);
         }
-        System.out.println("not a SUBSYSTEM!");
+        System.out.println("get output enum not a SUBSYSTEM!");
         return 0;
     }
 

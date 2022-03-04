@@ -27,11 +27,15 @@ public class Shooter extends Subsystem implements PidProvider {
     private static LedManager ledManager;
 
     private final ISolenoid hood;
+
     // State
     private boolean outputsChanged;
-    private boolean hoodOut = false;
+    private boolean distanceManaged = false;
 
-    private PeriodicIO mPeriodicIO = new PeriodicIO();
+    private boolean hoodOut;
+    private double velocityDemand;
+    private double actualShooterVelocity;
+    private double closedLoopError;
 
     // Constants
     private final String pidSlot = "slot0";
@@ -113,13 +117,14 @@ public class Shooter extends Subsystem implements PidProvider {
         return kF;
     }
 
-    public void setVelocity(double velocity) {
-        mPeriodicIO.velocityDemand = velocity;
-        outputsChanged = true;
+    public double getActualVelocity() {
+        return actualShooterVelocity;
     }
 
-    public boolean isHoodOut() {
-        return hoodOut;
+    public void setVelocity(double velocity) {
+        velocityDemand = velocity;
+        distanceManaged = true;
+        outputsChanged = true;
     }
 
     public void setHood(boolean in) {
@@ -129,43 +134,40 @@ public class Shooter extends Subsystem implements PidProvider {
 
     public void setState(SHOOTER_STATE state) {
         this.state = state;
-    }
-
-    public double getActualVelocity() {
-        return mPeriodicIO.actualShooterVelocity;
-    }
-
-    public double getTargetVelocity() {
-        return mPeriodicIO.velocityDemand;
-    }
-
-    public double getError() {
-        return mPeriodicIO.closedLoopError;
+        this.outputsChanged = true;
     }
 
     public boolean isVelocityNearTarget() {
         return (
-            Math.abs(this.getError()) < VELOCITY_THRESHOLD &&
-            (int) this.getTargetVelocity() != COAST_VELOCIY
+            Math.abs(closedLoopError) < VELOCITY_THRESHOLD &&
+            (int) velocityDemand != COAST_VELOCIY
         );
     }
 
     @Override
     public void readFromHardware() {
-        mPeriodicIO.actualShooterVelocity = shooterMain.getSelectedSensorVelocity(0);
-        mPeriodicIO.closedLoopError = shooterMain.getClosedLoopError(0);
+        actualShooterVelocity = shooterMain.getSelectedSensorVelocity(0);
+        closedLoopError = shooterMain.getClosedLoopError(0);
     }
 
     @Override
     public void writeToHardware() {
         if (outputsChanged) {
-            this.hood.set(hoodOut);
-            if (mPeriodicIO.velocityDemand == 0) {
-                this.shooterMain.set(ControlMode.PercentOutput, 0); // Inertia coast ! Set 0 to coasting value
-            } else {
-                this.shooterMain.set(ControlMode.Velocity, mPeriodicIO.velocityDemand);
+            switch (state){
+                case STOP:
+                    velocityDemand = 0;
+                    break;
+                case REVVING:
+                    if (!distanceManaged) velocityDemand = MID_VELOCITY; // make this a constant
+                    break;
+                case COASTING:
+                    velocityDemand = COAST_VELOCIY;
+                    break;
             }
-            System.out.println("velocity shooter demand = " + mPeriodicIO.velocityDemand);
+            hood.set(hoodOut);
+            shooterMain.set(ControlMode.Velocity, velocityDemand);
+
+            System.out.println("velocity shooter demand = " + velocityDemand);
             outputsChanged = false;
         }
     }

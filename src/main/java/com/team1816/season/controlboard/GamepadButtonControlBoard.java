@@ -62,7 +62,7 @@ public class GamepadButtonControlBoard implements IButtonControlBoard {
     }
 
     @Override
-    public boolean getFieldFollowing() {
+    public boolean getTurretFollowingMode() {
         return mController.getButton(Controller.Button.X);
     }
 

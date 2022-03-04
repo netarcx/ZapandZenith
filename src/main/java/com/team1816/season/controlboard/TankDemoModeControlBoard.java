@@ -127,7 +127,7 @@ public class TankDemoModeControlBoard implements IControlBoard {
     }
 
     @Override
-    public boolean getFieldFollowing() {
+    public boolean getTurretFollowingMode() {
         return false;
     }
 

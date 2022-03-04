@@ -3,6 +3,7 @@ package com.team1816.season.subsystems;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.team1816.lib.subsystems.Subsystem;
+import com.team1816.season.Constants;
 import edu.wpi.first.util.sendable.SendableBuilder;
 
 @Singleton
@@ -43,9 +44,6 @@ public class Orchestrator extends Subsystem {
     private boolean flushing = false;
     private boolean revving = false;
     private boolean firing = false;
-    private final boolean isAutoAim = factory.getConstant("useAutoAim") > 0;
-
-    private double shooterVel; // band-aid fix
 
     public Orchestrator() {
         super(NAME);
@@ -87,9 +85,8 @@ public class Orchestrator extends Subsystem {
         outputsChanged = true;
     }
 
-    public void setRevving(boolean revving, double shooterVel) {
+    public void setRevving(boolean revving) {
         this.revving = revving;
-        this.shooterVel = shooterVel;
         outputsChanged = true;
     }
 
@@ -98,56 +95,55 @@ public class Orchestrator extends Subsystem {
         outputsChanged = true;
     }
 
-    public void stopAll() {
+    private void stopAll() {
         collector.setState(Collector.COLLECTOR_STATE.STOP); // stop states auto-set subsystems to stop moving
         spindexer.setState(Spindexer.SPIN_STATE.STOP);
         elevator.setState(Elevator.ELEVATOR_STATE.STOP);
         shooter.setState(Shooter.SHOOTER_STATE.STOP);
-        shooter.setVelocity(0); // TODO make shooter use states as well
     }
 
-    public void flush() {
+    private void flush() {
         collector.setState(Collector.COLLECTOR_STATE.FLUSH);
         spindexer.setState(Spindexer.SPIN_STATE.FLUSH);
         elevator.setState(Elevator.ELEVATOR_STATE.FLUSH);
         shooter.setState(Shooter.SHOOTER_STATE.COASTING);
-        shooter.setVelocity(Shooter.COAST_VELOCIY);
     }
 
-    public void collect() {
+    private void collect() {
         collector.setState(Collector.COLLECTOR_STATE.COLLECTING);
         if (!firing) {
             spindexer.setState(Spindexer.SPIN_STATE.INTAKE);
         }
     }
 
-    public void revUp() {
+    private void revUp() {
         System.out.println("revving!");
         shooter.setState(Shooter.SHOOTER_STATE.REVVING);
-        if (isAutoAim) {
+
+        if (Constants.kUseAutoAim) {
             shooter.setVelocity(getDistance(DistanceManager.SUBSYSTEM.SHOOTER));
-            shooter.setHood(getDistance(DistanceManager.SUBSYSTEM.HOOD) == 1);
-        } else {
-            shooter.setVelocity(shooterVel);
+            shooter.setHood(getDistance(DistanceManager.SUBSYSTEM.HOOD) > 0);
         }
+
         if (!collecting) {
             collector.setState(Collector.COLLECTOR_STATE.REVVING);
             if (!firing) {
                 spindexer.setState(Spindexer.SPIN_STATE.STOP);
             }
         }
+
         if (!firing) { // make the elevator flush unless firing
             elevator.setState(Elevator.ELEVATOR_STATE.FLUSH);
         }
+
     }
 
-    public void fire() {
+    private void fire() {
         if (!elevator.colorOfBall()) { // spit out ball if wrong color ? idk maybe make this into a flush command
             shooter.setHood(false);
-        }
-        if (shooter.isVelocityNearTarget()) { // only fire if
-            if (isAutoAim) {
-                spindexer.setSpindexer(getDistance(DistanceManager.SUBSYSTEM.SPINDEXER));
+        } else if (shooter.isVelocityNearTarget()) { // only fire if
+            if (Constants.kUseAutoAim) {
+                spindexer.autoSpindexer(getDistance(DistanceManager.SUBSYSTEM.SPINDEXER));
                 elevator.autoElevator(getDistance(DistanceManager.SUBSYSTEM.ELEVATOR));
                 shooter.setHood(getDistance(DistanceManager.SUBSYSTEM.HOOD) > 0);
             }
@@ -179,7 +175,6 @@ public class Orchestrator extends Subsystem {
 
         if (!revving) {
             shooter.setState(Shooter.SHOOTER_STATE.COASTING);
-            shooter.setVelocity(Shooter.COAST_VELOCIY);
         }
     }
 

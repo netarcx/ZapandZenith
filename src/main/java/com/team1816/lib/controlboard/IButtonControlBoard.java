@@ -29,5 +29,5 @@ public interface IButtonControlBoard {
 
     boolean getShoot();
 
-    boolean getFieldFollowing();
+    boolean getTurretFollowingMode();
 }

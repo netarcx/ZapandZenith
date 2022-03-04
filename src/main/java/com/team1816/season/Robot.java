@@ -303,11 +303,11 @@ public class Robot extends TimedRobot {
                     createHoldAction(
                         mControlBoard::getShoot,
                         shooting -> {
-                            mOrchestrator.setRevving(shooting, Shooter.MID_VELOCITY);
+                            mOrchestrator.setRevving(shooting);
                             mOrchestrator.setFiring(shooting);
                         }
                     ),
-                    createAction( // make this an actual toggle?
+                    createAction(
                         mControlBoard::getCollectorToggle,
                         () -> {
                             mOrchestrator.setCollecting();
@@ -317,12 +317,12 @@ public class Robot extends TimedRobot {
                         mControlBoard::getCollectorBackspin,
                         mOrchestrator::setFlushing
                     ),
-                    createAction( // to turn the shooter on and off from its idle state - use at start of match
+                    createAction( // to turn the shooter on and off from its idle state - use only if necessary
                         mControlBoard::getOrchestrator,
                         () -> mOrchestrator.setStopped()
                     ),
                     createAction(
-                        mControlBoard::getFieldFollowing,
+                        mControlBoard::getTurretFollowingMode,
                         () -> {
                             if (mTurret.getControlMode() == Turret.ControlMode.FIELD_FOLLOWING) {
                                 mTurret.setControlMode(Turret.ControlMode.CENTER_FOLLOWING);
@@ -421,7 +421,8 @@ public class Robot extends TimedRobot {
             if (!mDriveByCameraInAuto) {
                 mAutoModeExecutor.start();
             }
-            mDrive.setHeading(mAutoModeExecutor.getAutoMode().getTrajectory().getInitialPose().getRotation());
+            // this may actually not be needed b/c startTrajectory in SwerveDrive does this exact logic and more
+//            mDrive.setHeading(mAutoModeExecutor.getAutoMode().getTrajectory().getInitialPose().getRotation());
             mEnabledLooper.start();
         } catch (Throwable t) {
             throw t;
@@ -446,7 +447,7 @@ public class Robot extends TimedRobot {
             mTurret.setTurretAngle(Turret.CARDINAL_SOUTH);
             mTurret.setControlMode(Turret.ControlMode.CENTER_FOLLOWING);
 
-            mCamera.setEnabled(getFactory().getConstant("useAutoAim") > 0);
+            mCamera.setEnabled(Constants.kUseAutoAim);
 
             //System.out.println(mTurret.getActualTurretPositionTicks() + "+++++++"); // for debugging whether or not getActTicks works. doesn't seem to - ginget
 
@@ -576,18 +577,13 @@ public class Robot extends TimedRobot {
         } catch (Throwable t) {
             throw t;
         }
-        System.out.println("CAMERA DISTANCE LINE 571 Robot.java" +  mCamera.getDistance());
         if (Constants.kIsLoggingTeleOp) {
             logger.updateTopics();
             logger.log();
         }
     }
 
-    TimeDelayedBoolean mShouldMaintainAzimuth = new TimeDelayedBoolean();
-    LatchedBoolean shouldChangeAzimuthSetpoint = new LatchedBoolean();
-
     public void manualControl() {
-        // boolean arcadeDrive = false;
         actionManager.update();
 
         
@@ -613,7 +609,6 @@ public class Robot extends TimedRobot {
             /*mControlBoard.getFieldRelative()*/// Field Relative override button conflicts with collector
             false
         );
-        //        }
     }
 
     @Override

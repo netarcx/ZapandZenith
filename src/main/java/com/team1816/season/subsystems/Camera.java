@@ -10,7 +10,6 @@ import java.net.*;
 public class Camera extends Subsystem {
 
     private static final String NAME = "camera";
-    private static Camera INSTANCE;
 
     private final String PROTOCOL_LINE = "\\|";
 
@@ -28,12 +27,14 @@ public class Camera extends Subsystem {
     private Socket socket;
     private BufferedReader socketIn;
     private PrintWriter socketOut;
-    private Boolean usingVision = true;
+    private Boolean usingVision = false;
     private long needsReconnect = 0;
 
     public Camera() {
         super(NAME);
-        socketConnect();
+        if(isImplemented()){
+            socketConnect();
+        }
     }
 
     private String query(String message) throws IOException {

@@ -100,8 +100,8 @@ public class ControlBoard implements IControlBoard {
     }
 
     @Override
-    public boolean getFieldFollowing() {
-        return mButtonControlBoard.getFieldFollowing();
+    public boolean getTurretFollowingMode() {
+        return mButtonControlBoard.getTurretFollowingMode();
     }
 
     @Override

@@ -13,6 +13,7 @@ public class RampUpShooterAction implements Action {
     @Inject
     private static Orchestrator orchestrator;
 
+
     private final int shooterVel;
 
     public RampUpShooterAction(int shooterVel) {
@@ -21,7 +22,8 @@ public class RampUpShooterAction implements Action {
 
     @Override
     public void start() {
-        orchestrator.setRevving(shooterVel > 0, shooterVel);
+        shooter.setVelocity(shooterVel);
+        orchestrator.setRevving(shooterVel > 0);
     }
 
     @Override

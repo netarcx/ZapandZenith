@@ -30,12 +30,12 @@ public class Spindexer extends Subsystem {
         this.spindexer = factory.getMotor(NAME, "spindexer");
     }
 
-    public void setSpindexer(double spindexerPower) {
+    public void autoSpindexer(double spindexerPower) { //
         distanceManaged = true;
         this.spindexerPower = spindexerPower;
     }
 
-    public void setFeederFlap(boolean feederFlapOut) {
+    public void setFeederFlap(boolean feederFlapOut) { // just here for later in case we need smthn like this
         this.feederFlapOut = feederFlapOut;
         outputsChanged = true;
     }
