@@ -216,12 +216,12 @@ public class Constants {
     public static final double kMinLookAhead = 12.0; // inches
     public static final double kMinLookAheadSpeed = 12.0; // inches per second
     public static final double kMaxLookAhead = 48.0; // inches
-    public static final double kMaxLookAheadSpeed = factory.getConstant("maxVel"); // inches per second
+    public static final double kMaxLookAheadSpeed = factory.getConstant("maxVel", 48); // inches per second
     public static final double kDeltaLookAhead = kMaxLookAhead - kMinLookAhead;
     public static final double kDeltaLookAheadSpeed =
         kMaxLookAheadSpeed - kMinLookAheadSpeed;
     public static double kCameraFrameRate = 30;
-    public static final double kPathFollowingMaxAccel = factory.getConstant("maxAccel");
+    public static final double kPathFollowingMaxAccel = factory.getConstant("maxAccel", 4);
     public static double kPathFollowingMaxVelMeters = factory.getConstant(
         "maxVelPathFollowing"
     );
@@ -258,15 +258,15 @@ public class Constants {
 
     public static final double kPXController = 1;
     public static final double kPYController = 1;
-    public static final double kPThetaController = 1500;
+    public static final double kPThetaController = 700;
     public static final double kDThetaController = 0; // 2000;
     public static double kMaxAngularSpeed = factory.getConstant("maxRotVel"); // rad/sec
-    public static final double kMaxAngularSpeedRadiansPerSecondSquared = Math.PI;
+    public static final double kMaxAngularAccelerationRadiansPerSecondSquared = Math.PI;
 
     // Constraint for the motion profilied robot angle controller
     public static final TrapezoidProfile.Constraints kThetaControllerConstraints = new TrapezoidProfile.Constraints(
         kMaxAngularSpeed,
-        kMaxAngularSpeedRadiansPerSecondSquared
+        kMaxAngularAccelerationRadiansPerSecondSquared
     );
     // Do not change anything after this line unless you rewire the robot and
     // update the spreadsheet!
