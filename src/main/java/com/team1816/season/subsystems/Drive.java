@@ -17,6 +17,7 @@ import com.team1816.season.RobotState;
 import com.team254.lib.util.DriveSignal;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
@@ -106,7 +107,7 @@ public abstract class Drive
         double right_error;
 
         // SWERVE IMPUTS
-        public SwerveModuleState[] actualModuleStates = new SwerveModuleState[4];
+        public ChassisSpeeds chassisSpeed = new ChassisSpeeds();
 
         // SWERVE OUTPUTS
         public SwerveModuleState[] desiredModuleStates = new SwerveModuleState[4];
@@ -156,7 +157,7 @@ public abstract class Drive
                             default:
                                 System.out.println(
                                     "unexpected drive control state: " +
-                                    mDriveControlState
+                                        mDriveControlState
                                 );
                                 break;
                         }
@@ -241,9 +242,9 @@ public abstract class Drive
 
         return (!factory.getSubsystem(NAME).implemented)
             ? factory
-                .getSubsystem(NAME)
-                .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
-                .kP
+            .getSubsystem(NAME)
+            .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
+            .kP
             : 0.0;
     }
 
@@ -253,9 +254,9 @@ public abstract class Drive
         defaultPIDConfig.kI = 0.0;
         return (!factory.getSubsystem(NAME).implemented)
             ? factory
-                .getSubsystem(NAME)
-                .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
-                .kI
+            .getSubsystem(NAME)
+            .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
+            .kI
             : 0.0;
     }
 
@@ -265,9 +266,9 @@ public abstract class Drive
         defaultPIDConfig.kD = 0.0;
         return (!factory.getSubsystem(NAME).implemented)
             ? factory
-                .getSubsystem(NAME)
-                .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
-                .kD
+            .getSubsystem(NAME)
+            .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
+            .kD
             : 0.0;
     }
 
@@ -277,9 +278,9 @@ public abstract class Drive
         defaultPIDConfig.kF = 0.0;
         return (!factory.getSubsystem(NAME).implemented)
             ? factory
-                .getSubsystem(NAME)
-                .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
-                .kF
+            .getSubsystem(NAME)
+            .pidConfig.getOrDefault(pidSlot, defaultPIDConfig)
+            .kF
             : 0.0;
     }
 
@@ -353,6 +354,11 @@ public abstract class Drive
         mPigeon.setYaw(0);
         mPigeon.setFusedHeading(0);
         mPigeon.setAccumZAngle(0);
+    }
+
+    @Override
+    public void zeroSensors(){
+        zeroSensors(Constants.StartingPose);
     }
 
     public abstract void zeroSensors(Pose2d pose);

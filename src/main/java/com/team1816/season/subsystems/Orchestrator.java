@@ -3,7 +3,13 @@ package com.team1816.season.subsystems;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.team1816.lib.subsystems.Subsystem;
+import com.team1816.season.Constants;
+import com.team1816.season.RobotState;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.util.sendable.SendableBuilder;
+
+import java.util.logging.ConsoleHandler;
 
 @Singleton
 public class Orchestrator extends Subsystem {
@@ -15,6 +21,9 @@ public class Orchestrator extends Subsystem {
     // this class will now deal with organizing the collector, spindexer, elevator, and shooter -- heck this might as well just be a SUPERSTRUCTURE
 
     private static final String NAME = "hopper";
+
+    @Inject
+    private static RobotState robotState;
 
     @Inject
     private static Collector collector;
@@ -163,6 +172,13 @@ public class Orchestrator extends Subsystem {
     public double getDistance(DistanceManager.SUBSYSTEM subsystem) {
         System.out.println("CAMERA DISTANCE Line 163 " + distanceManager.getOutput(camera.getDistance(), subsystem));
         return distanceManager.getOutput(camera.getDistance(), subsystem);
+    }
+
+    public double getPredictedDistance(DistanceManager.SUBSYSTEM subsystem) {
+        Translation2d cameraDistance = new Translation2d(getDistance(subsystem), Rotation2d.fromDegrees(camera.getDeltaXAngle())); //potentially changes needed in the future
+        Translation2d prediction = new Translation2d(robotState.delta_field_to_vehicle.dx, robotState.delta_field_to_vehicle.dy);
+        Translation2d net = cameraDistance.plus(prediction);
+        return net.getNorm();
     }
 
     public void idle() { // not rly efficient organization rn but easier to understand - each action has its own priority over idling
