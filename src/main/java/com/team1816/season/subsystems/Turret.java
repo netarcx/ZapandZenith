@@ -280,10 +280,10 @@ public class Turret extends Subsystem implements PidProvider {
                 autoHome();
                 positionControl(followingTurretPos);
                 break;
-//            case ABSOLUTE_MADNESS:
-//                trackAbsolute();
-//                positionControl(followingTurretPos);
-//                break;
+            case ABSOLUTE_MADNESS:
+                trackAbsolute();
+                positionControl(followingTurretPos);
+                break;
             case POSITION:
                 positionControl(desiredTurretPos);
                 break;
