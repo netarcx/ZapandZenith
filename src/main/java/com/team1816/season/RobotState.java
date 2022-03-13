@@ -3,6 +3,7 @@ package com.team1816.season;
 import com.google.inject.Singleton;
 import com.team1816.season.subsystems.Turret;
 import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -12,6 +13,7 @@ public class RobotState {
     public final Field2d field = new Field2d();
     public Pose2d field_to_vehicle = Constants.EmptyPose;
     public Rotation2d vehicle_to_turret = Constants.EmptyRotation;
+    public ChassisSpeeds chassis_speeds = new ChassisSpeeds(0, 0, 0);
     public Twist2d delta_field_to_vehicle = new Twist2d();
 
     public RobotState() {
@@ -43,11 +45,15 @@ public class RobotState {
         return field_to_vehicle.getRotation().plus(vehicle_to_turret).getDegrees();
     }
 
+    public double getCurrentShooterSpeedMetersPerSecond() {
+        return 0;
+    }
+
     public boolean isStationary(){
         return
-            delta_field_to_vehicle.dx == 0 &&
-            delta_field_to_vehicle.dy == 0 &&
-            delta_field_to_vehicle.dtheta == 0;
+            chassis_speeds.vxMetersPerSecond == 0 &&
+            chassis_speeds.vyMetersPerSecond == 0 &&
+            chassis_speeds.omegaRadiansPerSecond == 0;
     }
 
     public synchronized void outputToSmartDashboard() {

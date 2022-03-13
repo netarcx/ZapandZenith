@@ -11,6 +11,7 @@ import com.team1816.lib.subsystems.Subsystem;
 import com.team1816.season.Constants;
 import com.team1816.season.RobotState;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 
@@ -276,8 +277,13 @@ public class Turret extends Subsystem implements PidProvider {
                 break;
             case CENTER_FOLLOWING:
                 trackCenter();
+                autoHome();
                 positionControl(followingTurretPos);
                 break;
+//            case ABSOLUTE_MADNESS:
+//                trackAbsolute();
+//                positionControl(followingTurretPos);
+//                break;
             case POSITION:
                 positionControl(desiredTurretPos);
                 break;
@@ -342,6 +348,52 @@ public class Turret extends Subsystem implements PidProvider {
         }
     }
 
+    private void trackAbsolute() {
+        // conversion to field relative
+        int fieldTickOffset = -convertTurretDegreesToTicks( // currently negated because motor is running counterclockwise
+            robotState.field_to_vehicle.getRotation().getDegrees()
+        );
+
+        // conversion to target (center) relative
+        double opposite = Constants.fieldCenterY - robotState.field_to_vehicle.getY();
+        double adjacent = Constants.fieldCenterX - robotState.field_to_vehicle.getX();
+        double turretAngle = 0;
+        turretAngle = Math.atan(opposite / adjacent);
+        if (adjacent < 0) turretAngle += Math.PI;
+        int centerOffset = convertTurretDegreesToTicks(
+            Units.radiansToDegrees(turretAngle)
+        );
+
+        // final angle adjustment to account for robot's rate of change in pose on the field (delta_field_to_vehicle)
+        // I don't know how to math - looks like a Keerthi big brain moment
+
+        Translation2d diff = new Translation2d(robotState.getCurrentShooterSpeedMetersPerSecond(), Rotation2d.fromDegrees(robotState.getLatestFieldToTurret()));
+        Translation2d drive = new Translation2d(robotState.chassis_speeds.vxMetersPerSecond, robotState.chassis_speeds.vyMetersPerSecond);
+        Translation2d pre = drive.unaryMinus().plus(diff);
+
+        double motionOffsetAngle =
+            Math.acos((new Translation2d(pre.getX()*diff.getX(), pre.getY()*diff.getY()).getNorm()) /
+                (pre.getNorm()*diff.getNorm()));
+        if(motionOffsetAngle>Math.PI) {
+            motionOffsetAngle-=Math.PI*2;
+        }
+        int motionOffset = convertTurretDegreesToTicks(
+            Units.radiansToDegrees(motionOffsetAngle)
+        );
+        int adj =
+            (
+                fieldTickOffset +
+                    desiredTurretPos +
+                    centerOffset +
+                    motionOffset
+            );
+
+        if (adj != followingTurretPos) {
+            followingTurretPos = adj;
+            outputsChanged = true;
+        }
+    }
+
     private void positionControl(int rawPos) {
         int adjPos = (rawPos + ABS_TICKS_SOUTH + ZERO_OFFSET) % TURRET_MASK;
         if (outputsChanged) {
@@ -395,6 +447,7 @@ public class Turret extends Subsystem implements PidProvider {
         CAMERA_FOLLOWING,
         FIELD_FOLLOWING,
         CENTER_FOLLOWING,
+        ABSOLUTE_MADNESS,
         POSITION,
         MANUAL,
     }

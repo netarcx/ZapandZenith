@@ -4,6 +4,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.IMotorControllerEnhanced;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.team1816.lib.hardware.EnhancedMotorChecker;
 import com.team1816.lib.hardware.PIDSlotConfiguration;
@@ -11,12 +12,18 @@ import com.team1816.lib.hardware.components.pcm.ISolenoid;
 import com.team1816.lib.subsystems.PidProvider;
 import com.team1816.lib.subsystems.Subsystem;
 import com.team1816.season.Constants;
+import com.team1816.season.RobotState;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.util.sendable.SendableBuilder;
 
 @Singleton
 public class Shooter extends Subsystem implements PidProvider {
 
     private static final String NAME = "shooter";
+
+    @Inject
+    RobotState robotState;
 
     // Components
     private final IMotorControllerEnhanced shooterMain;
@@ -125,6 +132,23 @@ public class Shooter extends Subsystem implements PidProvider {
         outputsChanged = true;
     }
 
+    public void setVelocityAlt(double velocity) {
+        Translation2d chassisSpeed =
+            new Translation2d(
+                robotState.chassis_speeds.vxMetersPerSecond,
+                robotState.chassis_speeds.vyMetersPerSecond
+            );
+        Translation2d center =
+            new Translation2d(
+                1,
+                robotState.getLatestFieldToTurret()
+            );
+        // setting velocity
+        velocityDemand = velocity - convertShooterMetersToTicksPerSecond(
+            new Translation2d(chassisSpeed.getX(), chassisSpeed.getY()*center.getY()).getNorm()
+        );
+    }
+
     public void setHood(boolean in) {
         hoodOut = in;
         this.outputsChanged = true;
@@ -142,6 +166,18 @@ public class Shooter extends Subsystem implements PidProvider {
             Math.abs(closedLoopError) < VELOCITY_THRESHOLD &&
                 (int) velocityDemand != COAST_VELOCITY
         );
+    }
+
+    public double convertShooterTicksToMetersPerSecond(int ticks) {
+        return 0;
+    }
+
+    public int convertShooterMetersToTicksPerSecond (double metersPerSecond) {
+        return 0;
+    }
+
+    public double getAngleBetween(Translation2d a, Translation2d b) {
+        return Math.acos(new Translation2d(a.getX()*b.getX(), a.getY()*b.getY()).getNorm()/(a.getNorm()*b.getNorm()));
     }
 
     @Override

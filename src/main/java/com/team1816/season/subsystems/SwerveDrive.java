@@ -17,6 +17,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.RobotBase;
+
 import java.util.List;
 
 @Singleton
@@ -70,9 +71,9 @@ public class SwerveDrive extends Drive implements SwerveDrivetrain, PidProvider 
             ); // TODO get swerve max speed in meters/s
             for (int i = 0; i < 4; i++) {
                 swerveModules[i].setDesiredState(
-                        mPeriodicIO.desiredModuleStates[i],
-                        true
-                    );
+                    mPeriodicIO.desiredModuleStates[i],
+                    true
+                );
             }
         }
     }
@@ -119,8 +120,8 @@ public class SwerveDrive extends Drive implements SwerveDrivetrain, PidProvider 
         }
         if (
             getTrajectoryTimestamp() >
-            mTrajectory.getStates().get(mTrajectoryIndex).timeSeconds ||
-            mTrajectoryIndex == 0
+                mTrajectory.getStates().get(mTrajectoryIndex).timeSeconds ||
+                mTrajectoryIndex == 0
         ) mTrajectoryIndex++;
         if (mTrajectoryIndex >= mHeadings.size()) {
             System.out.println(mHeadings.get(mHeadings.size() - 1) + " = max");
@@ -129,7 +130,7 @@ public class SwerveDrive extends Drive implements SwerveDrivetrain, PidProvider 
         double timeBetweenPoints =
             (
                 mTrajectory.getStates().get(mTrajectoryIndex).timeSeconds -
-                mTrajectory.getStates().get(mTrajectoryIndex - 1).timeSeconds
+                    mTrajectory.getStates().get(mTrajectoryIndex - 1).timeSeconds
             );
         Rotation2d heading;
         heading =
@@ -162,7 +163,8 @@ public class SwerveDrive extends Drive implements SwerveDrivetrain, PidProvider 
     }
 
     @Override // not used in swerve
-    public void updateTrajectoryVelocities(Double aDouble, Double aDouble1) {}
+    public void updateTrajectoryVelocities(Double aDouble, Double aDouble1) {
+    }
 
     /* Used by SwerveControllerCommand in Auto */
     public void setModuleStates(SwerveModuleState[] desiredStates) {
@@ -183,12 +185,19 @@ public class SwerveDrive extends Drive implements SwerveDrivetrain, PidProvider 
 
     private void updateRobotPose() {
         mRobotState.field_to_vehicle = swerveOdometry.getPoseMeters();
-        mRobotState.delta_field_to_vehicle = new Twist2d(
+        mRobotState.chassis_speeds = new ChassisSpeeds(
             // these three may be missing conversions from velocity to change in pose? (meters/s to x-y-theta/updateTime)
             // not sure because field_to_vehicle is also being plugged directly into field as a value in meters
             mPeriodicIO.chassisSpeed.vxMetersPerSecond,
             mPeriodicIO.chassisSpeed.vyMetersPerSecond,
             mPeriodicIO.chassisSpeed.omegaRadiansPerSecond
+        );
+        mRobotState.delta_field_to_vehicle = new Twist2d(
+            // these three may be missing conversions from velocity to change in pose? (meters/s to x-y-theta/updateTime)
+            // not sure because field_to_vehicle is also being plugged directly into field as a value in meters
+            mPeriodicIO.chassisSpeed.vxMetersPerSecond * Constants.kLooperDt,
+            mPeriodicIO.chassisSpeed.vyMetersPerSecond * Constants.kLooperDt,
+            mPeriodicIO.chassisSpeed.omegaRadiansPerSecond * Constants.kLooperDt
         );
     }
 
