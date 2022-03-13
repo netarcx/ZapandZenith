@@ -323,18 +323,16 @@ public class Turret extends Subsystem implements PidProvider {
         );
 
         // conversion to target (center) relative
-        double opposite = Constants.fieldCenterY - robotState.field_to_vehicle.getY();
-        double adjacent = Constants.fieldCenterX - robotState.field_to_vehicle.getX();
-        double turretAngle = 0;
-        turretAngle = Math.atan(opposite / adjacent);
-        if (adjacent < 0) turretAngle += Math.PI;
+        double deltaY = Constants.fieldCenterY - robotState.field_to_vehicle.getY();
+        double deltaX = Constants.fieldCenterX - robotState.field_to_vehicle.getX();
+        double turretAngle = Math.atan(deltaY / deltaX);
+        if (deltaX < 0) turretAngle += Math.PI;
         int centerOffset = convertTurretDegreesToTicks(
             Units.radiansToDegrees(turretAngle)
         );
 
         // final angle adjustment to account for robot's rate of change in pose on the field (delta_field_to_vehicle)
         // I don't know how to math - looks like a Keerthi big brain moment
-
         int adj =
             (
                 fieldTickOffset +
@@ -355,11 +353,10 @@ public class Turret extends Subsystem implements PidProvider {
         );
 
         // conversion to target (center) relative
-        double opposite = Constants.fieldCenterY - robotState.field_to_vehicle.getY();
-        double adjacent = Constants.fieldCenterX - robotState.field_to_vehicle.getX();
-        double turretAngle = 0;
-        turretAngle = Math.atan(opposite / adjacent);
-        if (adjacent < 0) turretAngle += Math.PI;
+        double deltaY = Constants.fieldCenterY - robotState.field_to_vehicle.getY();
+        double deltaX = Constants.fieldCenterX - robotState.field_to_vehicle.getX();
+        double turretAngle = Math.atan(deltaY / deltaX);
+        if (deltaX < 0) turretAngle += Math.PI;
         int centerOffset = convertTurretDegreesToTicks(
             Units.radiansToDegrees(turretAngle)
         );
@@ -367,13 +364,12 @@ public class Turret extends Subsystem implements PidProvider {
         // final angle adjustment to account for robot's rate of change in pose on the field (delta_field_to_vehicle)
         // I don't know how to math - looks like a Keerthi big brain moment
 
-        Translation2d diff = new Translation2d(robotState.getCurrentShooterSpeedMetersPerSecond(), Rotation2d.fromDegrees(robotState.getLatestFieldToTurret()));
-        Translation2d drive = new Translation2d(robotState.chassis_speeds.vxMetersPerSecond, robotState.chassis_speeds.vyMetersPerSecond);
-        Translation2d pre = drive.unaryMinus().plus(diff);
+        Translation2d centralAxis = new Translation2d(robotState.getCurrentShooterSpeedMetersPerSecond(), Rotation2d.fromDegrees(robotState.getLatestFieldToTurret()));
+        Translation2d driveAxis = new Translation2d(robotState.chassis_speeds.vxMetersPerSecond, robotState.chassis_speeds.vyMetersPerSecond);
+        Translation2d predictedTrajectory = driveAxis.unaryMinus().plus(centralAxis);
 
-        double motionOffsetAngle =
-            Math.acos((new Translation2d(pre.getX()*diff.getX(), pre.getY()*diff.getY()).getNorm()) /
-                (pre.getNorm()*diff.getNorm()));
+        double motionOffsetAngle = getAngleBetween(predictedTrajectory, centralAxis);
+
         if(motionOffsetAngle>Math.PI) {
             motionOffsetAngle-=Math.PI*2;
         }
@@ -417,6 +413,10 @@ public class Turret extends Subsystem implements PidProvider {
             }
             outputsChanged = false;
         }
+    }
+
+    public double getAngleBetween(Translation2d a, Translation2d b) {
+        return (a.getNorm()*b.getNorm()==0)?0:Math.acos((a.getX()*b.getX() + a.getY()*b.getY())/(a.getNorm()*b.getNorm()));
     }
 
     @Override

@@ -133,19 +133,19 @@ public class Shooter extends Subsystem implements PidProvider {
     }
 
     public void setVelocityAlt(double velocity) {
-        Translation2d chassisSpeed =
+        Translation2d chassisVelocity =
             new Translation2d(
                 robotState.chassis_speeds.vxMetersPerSecond,
                 robotState.chassis_speeds.vyMetersPerSecond
             );
-        Translation2d center = //important to make sure that this is a unit vector
+        Translation2d shooterDirection = //important to make sure that this is a unit vector
             new Translation2d(
                 1,
                 Rotation2d.fromDegrees(robotState.getLatestFieldToTurret())
             );
         // setting velocity
         velocityDemand = velocity - convertShooterMetersToTicksPerSecond(
-            new Translation2d(chassisSpeed.getX()*center.getX(), chassisSpeed.getY()*center.getY()).getNorm()
+            chassisVelocity.getX()*shooterDirection.getX() + chassisVelocity.getY()*shooterDirection.getY()
         );
     }
 
@@ -177,7 +177,7 @@ public class Shooter extends Subsystem implements PidProvider {
     }
 
     public double getAngleBetween(Translation2d a, Translation2d b) {
-        return Math.acos(new Translation2d(a.getX()*b.getX(), a.getY()*b.getY()).getNorm()/(a.getNorm()*b.getNorm()));
+        return (a.getNorm()*b.getNorm()==0)?0:Math.acos((a.getX()*b.getX() + a.getY()*b.getY())/(a.getNorm()*b.getNorm()));
     }
 
     @Override

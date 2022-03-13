@@ -46,7 +46,7 @@ public class RobotState {
     }
 
     public double getCurrentShooterSpeedMetersPerSecond() {
-        return 0;
+        return 5; // just an arbitrary constant. to be changed later
     }
 
     public boolean isStationary(){
