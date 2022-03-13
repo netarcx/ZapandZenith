@@ -138,14 +138,14 @@ public class Shooter extends Subsystem implements PidProvider {
                 robotState.chassis_speeds.vxMetersPerSecond,
                 robotState.chassis_speeds.vyMetersPerSecond
             );
-        Translation2d center =
+        Translation2d center = //important to make sure that this is a unit vector
             new Translation2d(
                 1,
-                robotState.getLatestFieldToTurret()
+                Rotation2d.fromDegrees(robotState.getLatestFieldToTurret())
             );
         // setting velocity
         velocityDemand = velocity - convertShooterMetersToTicksPerSecond(
-            new Translation2d(chassisSpeed.getX(), chassisSpeed.getY()*center.getY()).getNorm()
+            new Translation2d(chassisSpeed.getX()*center.getX(), chassisSpeed.getY()*center.getY()).getNorm()
         );
     }
 
