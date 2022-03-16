@@ -1,5 +1,7 @@
 package com.team1816.lib.vision;
 
+import edu.wpi.first.wpilibj.RobotBase;
+
 import java.io.*;
 import java.net.*;
 
@@ -21,7 +23,8 @@ public class VisionSocket {
         if (!enabled) return false;
         try {
             socket = new Socket();
-            socket.connect(new InetSocketAddress("10.18.16.16", 5802), 10);
+            var address = RobotBase.isReal() ? "10.18.16.16" : "127.0.0.1";
+            socket.connect(new InetSocketAddress(address, 5802), 10);
             socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             socketOut = new PrintWriter(socket.getOutputStream(), true);
             debug("connect succeeded");

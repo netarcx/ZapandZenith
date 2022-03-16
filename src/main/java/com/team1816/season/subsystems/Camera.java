@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.team1816.lib.subsystems.Subsystem;
 import com.team1816.lib.vision.VisionSocket;
+import edu.wpi.first.wpilibj.Timer;
 
 @Singleton
 public class Camera extends Subsystem {
@@ -21,6 +22,8 @@ public class Camera extends Subsystem {
     private static final double CAMERA_FOCAL_LENGTH = 350; // px
     private static final double VIDEO_WIDTH = 672.0; // px
     public static final double ALLOWABLE_AIM_ERROR = 0.2; // deg
+
+    private double roundTripTime;
 
     public Camera() {
         super(NAME);
@@ -42,12 +45,15 @@ public class Camera extends Subsystem {
     }
 
     public double getDistance() {
+        var startTime = Timer.getFPGATimestamp();
         String[] parts = socket.request("distance");
         if (parts.length < 2) {
             System.out.println("lol" + String.join(" ", parts));
             return 0;
         }
         System.out.println("CAMERA: getDistance() " + Double.parseDouble(parts[1]));
+        var endTime = Timer.getFPGATimestamp();
+        roundTripTime = endTime - startTime;
         return Double.parseDouble(parts[1]);
     }
 
@@ -76,5 +82,16 @@ public class Camera extends Subsystem {
         if (socket.shouldReconnect()) {
             socket.connect();
         }
+    }
+
+    public void simulationPeriodic() {
+        double deltaX = this.getDeltaXAngle();
+        double distance = this.getDistance();
+
+        System.out.println("{ dx = " + deltaX + ", dist = " + getDistance() + " }");
+    }
+
+    public double getRoundTripTime() {
+        return roundTripTime;
     }
 }

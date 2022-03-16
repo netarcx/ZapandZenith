@@ -261,10 +261,11 @@ public class Robot extends TimedRobot {
                 mCamera.CreateBadLogTopic(
                     "Camera/CenterX",
                     "Degrees",
-                    mCamera::getRawCenterX,
-                    "hide"
+                    mCamera::getRawCenterX
                 );
             }
+
+            mCamera.CreateBadLogTopic("ResponseTime", "s", mCamera::getRoundTripTime);
 
             logger.finishInitialization();
 
@@ -638,4 +639,18 @@ public class Robot extends TimedRobot {
 
     @Override
     public void testPeriodic() {}
+
+    @Override
+    public void simulationInit() {
+        super.simulationInit();
+        mCamera.setEnabled(true);
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        super.simulationPeriodic();
+        mCamera.simulationPeriodic();
+        logger.updateTopics();
+        logger.log();
+    }
 }
