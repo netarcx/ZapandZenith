@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+option java_package = "com.team1816.season.proto";
+option java_outer_classname = "VisionProto";
+
+message VisionFrame {
+    optional int32 distance = 1 [default = -1];
+    optional int32 center_x = 2 [default = -1];
+    optional int32 center_y = 3 [default = -1];
+}

@@ -15,6 +15,6 @@ server_thread.daemon = True
 server_thread.start()
 
 while True:
-    vs.updateSavedCenter(str(random.randint(-20, 20)), str(random.randint(-20, 20)))
-    vs.updateSavedDistance(str(random.randint(0, 100)))
+    vs.updateSavedCenter(random.randint(-20, 20), random.randint(-20, 20))
+    vs.updateSavedDistance(random.randint(0, 100))
 

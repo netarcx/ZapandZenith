@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.team1816.lib.subsystems.Subsystem;
 import com.team1816.lib.vision.VisionSocket;
+import com.team1816.season.proto.VisionProto;
 import edu.wpi.first.wpilibj.Timer;
 
 @Singleton
@@ -31,11 +32,9 @@ public class Camera extends Subsystem {
     }
 
     public double getDeltaXAngle() {
-        String[] coords = socket.request("center_x");
-        if (coords.length < 2) {
-            return 0;
-        }
-        double x = Double.parseDouble(coords[1]);
+        VisionProto.VisionFrame frame = socket.request("center_x");
+
+        double x = frame.getCenterX();
         if (x < 0) {
             // Reset deltaX to 0 if contour not detected
             return 0;
@@ -45,24 +44,18 @@ public class Camera extends Subsystem {
     }
 
     public double getDistance() {
-        var startTime = Timer.getFPGATimestamp();
-        String[] parts = socket.request("distance");
-        if (parts.length < 2) {
-            System.out.println("lol" + String.join(" ", parts));
-            return 0;
-        }
-        System.out.println("CAMERA: getDistance() " + Double.parseDouble(parts[1]));
-        var endTime = Timer.getFPGATimestamp();
-        roundTripTime = endTime - startTime;
-        return Double.parseDouble(parts[1]);
+        var timeBefore = Timer.getFPGATimestamp();
+        VisionProto.VisionFrame frame = socket.request("distance");
+//            System.out.println("CAMERA: getDistance() " + frame.getDistance());
+        var timeAfter = Timer.getFPGATimestamp();
+        roundTripTime = timeAfter - timeBefore;
+        System.out.println("roundTripTime =" + roundTripTime);
+        return frame.getDistance();
     }
 
     public double getRawCenterX() {
-        String[] coords = socket.request("center_x");
-        if (coords.length < 2) {
-            return 0;
-        }
-        return Double.parseDouble(coords[1]);
+        VisionProto.VisionFrame frame = socket.request("center_x");
+        return frame.getCenterX();
     }
 
     public void setEnabled(boolean enabled) {

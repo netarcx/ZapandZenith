@@ -85,6 +85,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.mockito:mockito-core:3.6.0'
     testImplementation 'org.hamcrest:hamcrest:2.1'
+
+    implementation 'com.google.protobuf:protobuf-java:3.19.4'
 }
 
 // Simulation configuration (e.g. environment variables).

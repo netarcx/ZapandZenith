@@ -1,5 +1,6 @@
 package com.team1816.lib.vision;
 
+import com.team1816.season.proto.VisionProto;
 import edu.wpi.first.wpilibj.RobotBase;
 
 import java.io.*;
@@ -9,7 +10,7 @@ public class VisionSocket {
 
     private final String PROTOCOL_LINE = "\\|";
     private Socket socket;
-    private BufferedReader socketIn;
+    private InputStream socketIn;
     private PrintWriter socketOut;
     private long needsReconnect = 0;
     private boolean enabled = false;
@@ -25,7 +26,7 @@ public class VisionSocket {
             socket = new Socket();
             var address = RobotBase.isReal() ? "10.18.16.16" : "127.0.0.1";
             socket.connect(new InetSocketAddress(address, 5802), 10);
-            socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            socketIn = socket.getInputStream();
             socketOut = new PrintWriter(socket.getOutputStream(), true);
             debug("connect succeeded");
         } catch (Throwable t) {
@@ -88,24 +89,22 @@ public class VisionSocket {
         return connected;
     }
 
-    public String[] request(String message) {
+    public VisionProto.VisionFrame request(String message) {
+        var builder = VisionProto.VisionFrame.newBuilder();
         // we can safely return new String[0] because
         // all the code already checks for length > 1 as a safety measure
         // against, like, `distance|` being returned.
         if (!enabled || needsReconnect != 0) {
             debug("not connected for line: " + message);
-            return new String[0];
+            return VisionProto.VisionFrame.getDefaultInstance();
         }
         debug("enabled, sending request: " + message);
         try {
             socketOut.write(message + "\n");
             socketOut.flush();
             debug("Wrote line");
-            String line = socketIn.readLine();
-            debug("Read line: " + line);
-            if (line == null) return new String[0];
-            System.out.println("CAMERA LINE: " + line);
-            return line.split(PROTOCOL_LINE);
+            return VisionProto.VisionFrame.parseDelimitedFrom(socketIn);
+//            System.out.println("CAMERA LINE: " + line);
         } catch (IOException e) {
             debug("Write failed: " + e.getMessage());
             needsReconnect = System.currentTimeMillis();

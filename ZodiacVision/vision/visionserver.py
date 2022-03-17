@@ -1,8 +1,8 @@
 import socket
 import threading
-
 import yaml
-
+from . import vision_frame_pb2
+import google.protobuf.internal.encoder as encoder
 
 class ThreadedVisionServer(object):
     def __init__(self, host, port, yml_path, yaml_data):
@@ -37,29 +37,28 @@ class ThreadedVisionServer(object):
                         # Set the response to echo back the recieved data
                         response = data.strip()
                         print(response)
-                        self.dispatchResponse(write, response)
+                        self.dispatchResponse(client, response)
                 except Exception as e:
                     print(e)
                     client.close()
                     return False
 
-    def dispatchResponse(self, writer, msg):
-        if msg == 'distance':
-            writer.write("distance|" + self.distance + "\n")
-            writer.flush()
-        elif msg == 'center_x':
-            writer.write("center_x|" + self.cx + "\n")
-            writer.flush()
-        elif msg == 'center_y':
-            writer.write("center_y|" + self.cy + "\n")
-            writer.flush()
-        elif msg == 'point':
-            writer.write(self.cx+'|'+self.cy+'|' + self.distance + "\n")
-            writer.flush()
-        elif 'calib' in msg:
+    def dispatchResponse(self, client, msg):
+        if 'calib' in msg:
             print(str(msg))
             msg = str(msg).replace("'", "").split('|')
             self.calibChange(msg[1], msg[2])
+        else:
+            response_frame = vision_frame_pb2.VisionFrame()
+            response_frame.distance = self.distance
+            response_frame.center_x = self.cx
+            response_frame.center_y = self.cy
+
+            frame_bytes = response_frame.SerializeToString()  # technically serialized as byte array
+            len_bytes = encoder._VarintBytes(len(frame_bytes))
+            print(len(frame_bytes))
+            client.sendall(len_bytes + frame_bytes)
+
 
     def updateSavedCenter(self, cx, cy):
         self.cx = cx
