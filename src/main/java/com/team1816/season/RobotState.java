@@ -16,8 +16,10 @@ public class RobotState {
     public Twist2d delta_field_to_vehicle = new Twist2d();
     public ChassisSpeeds chassis_speeds = new ChassisSpeeds(0, 0, 0);
     public double shooterSpeed = 0;
+    public double distanceFromTarget = 0;
 
     // Superstructure ACTUAL states
+    public boolean usingVision = false;
     public Point visionPoint = new Point();
     public Collector.COLLECTOR_STATE collectorState = Collector.COLLECTOR_STATE.STOP;
     public Shooter.SHOOTER_STATE shooterState = Shooter.SHOOTER_STATE.STOP;
@@ -60,8 +62,15 @@ public class RobotState {
         return field_to_vehicle.getRotation().plus(vehicle_to_turret).getDegrees();
     }
 
-    public Twist2d getDeltaPoseToCenter() {
+    public Twist2d getDeltaPose() {
         return delta_field_to_vehicle; // make conversion from field relative deltaPose to center relative deltaPose
+    }
+
+    public double getDistanceFromTarget() {
+        if(usingVision && visionPoint.dist > 10) {// a check to see if we're getting a valid distance
+            return visionPoint.dist;
+        }
+        return distanceFromTarget;
     }
 
     public double getCurrentShooterSpeedMetersPerSecond() {

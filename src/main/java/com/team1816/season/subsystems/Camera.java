@@ -107,6 +107,7 @@ public class Camera extends Subsystem {
     }
 
     public void readFromHardware() {
+        robotState.usingVision = enabled;
         if (socket.shouldReconnect()) {
             socket.connect();
         }

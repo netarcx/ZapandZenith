@@ -127,14 +127,17 @@ public class Superstructure {
     public double getDistance(DistanceManager.SUBSYSTEM subsystem) {
         System.out.println(
             "GETTING DISTANCE FROM CAMERA / DISTANCE MANAGER " +
-            distanceManager.getOutput(camera.getDistance(), subsystem)
+            //distanceManager.getOutput(camera.getDistance(), subsystem)
+            distanceManager.getOutput(mRobotState.getDistanceFromTarget(), subsystem)
         );
-        return distanceManager.getOutput(camera.getDistance(), subsystem);
+        //return distanceManager.getOutput(camera.getDistance(), subsystem);
+        return distanceManager.getOutput(mRobotState.getDistanceFromTarget(), subsystem);
     }
 
     public double getPredictedDistance(DistanceManager.SUBSYSTEM subsystem) {
         Translation2d shooterDist = new Translation2d(
-            distanceManager.getOutput(camera.getDistance(), subsystem),
+            //distanceManager.getOutput(camera.getDistance(), subsystem),
+            distanceManager.getOutput(mRobotState.getDistanceFromTarget(), subsystem),
             Rotation2d.fromDegrees(mRobotState.getLatestFieldToTurret())
         );
         Translation2d motionBuffer = new Translation2d(

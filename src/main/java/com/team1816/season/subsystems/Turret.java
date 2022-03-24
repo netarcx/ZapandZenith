@@ -9,6 +9,7 @@ import com.team1816.lib.hardware.components.motor.IMotorSensor;
 import com.team1816.lib.subsystems.PidProvider;
 import com.team1816.lib.subsystems.Subsystem;
 import com.team1816.season.Constants;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
@@ -317,6 +318,15 @@ public class Turret extends Subsystem implements PidProvider {
         double turretAngle = 0;
         turretAngle = Math.atan(opposite / adjacent);
         if (adjacent < 0) turretAngle += Math.PI;
+
+        robotState.distanceFromTarget =
+            Units.metersToInches(
+                new Translation2d(
+                    opposite,
+                    adjacent
+                ).getNorm()
+            );
+
         return convertTurretDegreesToTicks(
             Units.radiansToDegrees(turretAngle)
         );
