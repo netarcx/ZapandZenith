@@ -67,7 +67,7 @@ public class RobotState {
     }
 
     public double getDistanceFromTarget() {
-        if(usingVision && visionPoint.dist > 10) {// a check to see if we're getting a valid distance
+        if(usingVision && visionPoint.dist > 10) { // a check to see if we're getting a valid distance
             return visionPoint.dist;
         }
         return distanceFromTarget;

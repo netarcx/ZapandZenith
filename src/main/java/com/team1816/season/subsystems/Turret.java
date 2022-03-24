@@ -320,11 +320,9 @@ public class Turret extends Subsystem implements PidProvider {
         if (adjacent < 0) turretAngle += Math.PI;
 
         robotState.distanceFromTarget =
-            Units.metersToInches(
-                new Translation2d(
-                    opposite,
-                    adjacent
-                ).getNorm()
+            Math.hypot(
+                opposite,
+                adjacent
             );
 
         return convertTurretDegreesToTicks(
