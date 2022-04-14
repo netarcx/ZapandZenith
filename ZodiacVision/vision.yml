@@ -1,4 +1,4 @@
-camera: {exposure: 8.0, fps: 100}
+camera: {exposure: 8.0, debug: 0, fps: 100}
 color:
     lower: {H:60.0, S: 132.0, V: 150.0}
     upper: {H: 81.0, S: 255.0, V: 255.0}

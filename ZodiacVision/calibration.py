@@ -28,7 +28,6 @@ if __name__ == '__main__':
         return lambda value : (
             s.send(b'calib|' + type + b'|' + str(value).zfill(3).encode() + b'\n')
         )
-
     s.connect(address)
     reader = s.makefile('r')
     s.send(b"settings\n")
@@ -46,9 +45,9 @@ if __name__ == '__main__':
     cv2.createTrackbar('SMAX', 'config', int(colors['upper']['S']), 255, update("SMAX"))
     cv2.createTrackbar('VMAX', 'config', int(colors['upper']['V']), 255, update("VMAX"))
     cv2.createTrackbar('EXPOSURE', 'config', int(data['camera']['exposure']), 50, update("EXPS"))
+    cv2.createTrackbar('Debug', 'config', int(data['camera']['debug']), 1, update("DEBG"))
     # todo: fix this - using createButton throws saying the library was compiled 
     # without it
-    
     # cv2.createButton("Save", lambda : s.send(b'calib|SAVE\n'))
     # cv2.createButton("Reset", lambda : s.send(b'calib|RESET\n'))
     cv2.waitKey(0)
