@@ -314,6 +314,13 @@ public class Turret extends Subsystem implements PidProvider {
         return ((int) (delta * 28)) - ABS_TICKS_SOUTH;
     }
 
+    private int cameraFollowingOffset(int offset) {
+        var scale = 20.0; //needs to be large enough to scale deltaX so that the offset lies within the acceptable range
+        var delta = -camera.getDeltaX()*scale + (double) offset;
+        var reScale = 0.02;
+        return ((int) (delta*reScale)) - ABS_TICKS_SOUTH;
+    }
+
     private int fieldFollowingOffset() {
         return -convertTurretDegreesToTicks( // currently negated because motor is running counterclockwise
             robotState.field_to_vehicle.getRotation().getDegrees()
@@ -370,8 +377,8 @@ public class Turret extends Subsystem implements PidProvider {
     }
 
     private void autoHomeWithOffset(int offset) {
-        var cameraOffset = cameraFollowingOffset();
-        int adj = followingTurretPos + cameraOffset + offset;
+        var cameraOffset = cameraFollowingOffset(offset);
+        int adj = followingTurretPos + cameraOffset;
         if (adj != followingTurretPos) {
             followingTurretPos = adj;
             outputsChanged = true;
