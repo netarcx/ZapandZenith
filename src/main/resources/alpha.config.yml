@@ -65,20 +65,31 @@ subsystems:
             rpmEpsilonCheck: 60
 pcm: 8
 constants:
+    ## Pigeon Config ##
+    pigeonId: 9
+    isPigeon2: 1
+    pigeonOnTalon: -1
+    ## Drivetrain Dimensions and Parameters ##
+    maxVel: 3 # meters/s
+    maxVelPathFollowing: 3 # 160 # 240 # inches/s # 22560 native units ---30
+    maxVelOpenLoop: 3 # 160 # 240 # inches/s # 22560 native units ---30
+    maxRotVel: 7.2
     maxTicks: 14000 # ticks per 100ms TODO test actual maxTicks value
-    sensorPhase: 0
-    kLooperDt: .010
+    maxAccel: 20 #inch/s^2
+    trackWidth: 25 #inches
+    wheelbaseLength: 25 #inches
+    wheelDiameter: 6.32 #inches
     kTrackScrubFactor: 1.0
-    isSwerve: 0
+    ## General Config ##
+    sensorPhase: 0
+    kLooperDt: .020
     verbose: 0 # 0 or 1
-    compressorEnabled: 0 # 0 or 1
+    useCameraInAuto: 0
     useAutoAim: 1
-    maxVel: 120 # inches/s
-    maxAccel: 60 # inches/s^2
-    trackWidth: 23 # inches
-    wheelbaseLength: 21.5 #inches
-    wheelDiameter: 6.122 #inches
+    compressorEnabled: 1 # 0 or 1
+    ## Logging Config ##
     logTeleOp: 1
     logAuto: 1
-    teleopFieldCentric: 0
     badLogEnabled: 1
+    pdIsRev: 1 # power distribution
+

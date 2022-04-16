@@ -222,11 +222,11 @@ subsystems:
 pcm: 2
 canivoreBusName: highSpeed
 constants:
-    # pigeon
+    ## Pigeon ##
     pigeonId: 13
     isPigeon2: 1
     pigeonOnTalon: -1
-    # drivetrain dimensions and movement
+    ## Drivetrain Dimensions and Parameters ##
     maxRotVel: 7.2
     trackWidth: 21 #inches
     wheelbaseLength: 21.5 #inches
@@ -235,13 +235,13 @@ constants:
     maxVelOpenLoop: 3 # 160 # 240 # inches/s # 22560 native units ---30
     maxVelPathFollowing: 2 # 160 # 240 # inches/s # 22560 native units ---30
     maxAccel: 100 # inches/s^ 2
-    ## Logging ##
+    ## Logging Config ##
     logTeleOp: 1 # 0 or 1
     logAuto: 1 # 0 or 1
     badLogEnabled: 1 # 0 or 1
     configStatusFrames: 0 # 0 or 1
     verbose: 0 # 0 or 1
-    ## General ##
+    ## General Config ##
     useCameraInAuto: 0
     teleopFieldCentric: 1 # 0 or 1
     compressorEnabled: 1 # 0 or 1
