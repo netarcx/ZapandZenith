@@ -151,23 +151,23 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
                 leftAdjDemand - mPeriodicIO.left_error;
             mPeriodicIO.right_velocity_ticks_per_100ms = rightAdjDemand;
 
-            // calculate rotation based on left/right vel differences
-            gyroDrift -=
-                (
-                    mPeriodicIO.left_velocity_ticks_per_100ms -
-                    mPeriodicIO.right_velocity_ticks_per_100ms
-                ) /
-                robotWidthTicks;
-
+            gyroDrift -= 0;
             // simulate gyro
             mPeriodicIO.gyro_heading_no_offset =
                 mPeriodicIO.gyro_heading_no_offset.rotateBy(
-                    Rotation2d.fromDegrees(gyroDrift * .3)
+                    new Rotation2d(
+                        mPeriodicIO.chassisSpeed.omegaRadiansPerSecond *
+                        Constants.kLooperDt *
+                        0.25
+                    )
                 );
         } else {
             mPeriodicIO.gyro_heading_no_offset = Rotation2d.fromDegrees(mPigeon.getYaw());
         }
-        mPeriodicIO.gyro_heading = mPeriodicIO.gyro_heading_no_offset;
+        mPeriodicIO.gyro_heading =
+            mPeriodicIO.gyro_heading_no_offset.rotateBy(
+                Rotation2d.fromDegrees(gyroDrift)
+            );
         if (mDriveControlState == DriveControlState.OPEN_LOOP) {
             mPeriodicIO.left_error = 0;
             mPeriodicIO.right_error = 0;
