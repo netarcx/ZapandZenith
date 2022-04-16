@@ -22,8 +22,7 @@ public class SwerveKinematics {
     @Inject
     private static Drive.Factory mDriveFactory;
 
-    private static Translation2d[] moduleRelativePositions =
-        Constants.Swerve.kModulePositions;
+    private static Translation2d[] moduleRelativePositions = Constants.kModulePositions;
     private static List<Translation2d> moduleRotationDirections = updateRotationDirections();
 
     private static List<Translation2d> updateRotationDirections() {

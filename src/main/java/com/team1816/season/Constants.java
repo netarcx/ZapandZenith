@@ -8,6 +8,7 @@ import com.team254.lib.util.Units;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 
@@ -67,6 +68,7 @@ public class Constants {
 
     public static final Pose2d ZeroPose = new Pose2d(0.5, fieldCenterY, EmptyRotation);
     public static Pose2d StartingPose = new Pose2d(0.5, fieldCenterY, EmptyRotation);
+    public static Pose2d prevDrivePose = new Pose2d(0.5, fieldCenterY, EmptyRotation);
 
     // CAN Timeouts
     public static final int kCANTimeoutMs = 10; // use for important on the fly updates
@@ -76,6 +78,44 @@ public class Constants {
         "drivetrain",
         "openLoopRampRate"
     );
+
+    private static final double moduleDeltaX =
+        Units.inches_to_meters(kDriveWheelbaseLengthInches) / 2.0;
+    private static final double moduleDeltaY =
+        Units.inches_to_meters(kDriveWheelTrackWidthInches) / 2.0;
+
+    public static final Translation2d kFrontLeftModulePosition = new Translation2d(
+        moduleDeltaX,
+        moduleDeltaY
+    );
+    public static final Translation2d kFrontRightModulePosition = new Translation2d(
+        moduleDeltaX,
+        -moduleDeltaY
+    );
+    public static final Translation2d kBackLeftModulePosition = new Translation2d(
+        -moduleDeltaX,
+        moduleDeltaY
+    );
+    public static final Translation2d kBackRightModulePosition = new Translation2d(
+        -moduleDeltaX,
+        -moduleDeltaY
+    );
+
+    public static final Translation2d[] kModulePositions = {
+        kFrontLeftModulePosition,
+        kFrontRightModulePosition,
+        kBackRightModulePosition,
+        kBackLeftModulePosition,
+    };
+
+    public static class Tank {
+
+        public String kName = "Name";
+
+        public static DifferentialDriveKinematics tankKinematics = new DifferentialDriveKinematics(
+            kDriveWheelTrackWidthMeters
+        );
+    }
 
     public static class Swerve {
 
@@ -187,11 +227,12 @@ public class Constants {
         "maxVelPathFollowing"
     );
     public static double kOpenLoopMaxVelMeters = factory.getConstant("maxVelOpenLoop");
+    public static final double kTicksPerRevolution = 4096; // make into yaml constant
 
-    public static final double kPXController = 6;
-    public static final double kPYController = 6;
-    public static final double kPThetaController = 600; // find why this is so big (700)
-    public static final double kIThetaController = 0; // find why this is so big (700)
+    public static final double kPXController = 10;
+    public static final double kPYController = 10;
+    public static final double kPThetaController = 700; // find why this is so big (700)
+    public static final double kIThetaController = 0;
     public static final double kDThetaController = 0; // 2000;
     public static double kMaxAngularSpeed = factory.getConstant("maxRotVel"); // rad/sec
     public static final double kMaxAngularAccelerationRadiansPerSecondSquared = Math.PI;
@@ -211,8 +252,8 @@ public class Constants {
     public static final boolean kUsePoseTrack =
         factory.getConstant("shooter", "usingPoseForSpeed", 0) > 0;
     public static final boolean kUseVision = factory.getSubsystem("camera").implemented;
-    public static final boolean kEnableBucketTuning =
-        factory.getConstant("enableBucketTuning", 0) > 0;
+    public static final boolean kUseCameraInAuto =
+        factory.getConstant("useCameraInAuto", 0) > 0;
     // Do not change anything after this line unless you rewire the robot and
     // update the spreadsheet!
     // Port assignments should match up with the spreadsheet here:
