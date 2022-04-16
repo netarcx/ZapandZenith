@@ -8,6 +8,7 @@ import com.team254.lib.util.Units;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 
@@ -107,6 +108,15 @@ public class Constants {
         kBackLeftModulePosition,
     };
 
+    public static class Tank {
+
+        public String kName = "Name";
+
+        public static DifferentialDriveKinematics tankKinematics = new DifferentialDriveKinematics(
+            kDriveWheelTrackWidthMeters
+        );
+    }
+
     public static class Swerve {
 
         public String kName = "Name";
@@ -149,9 +159,8 @@ public class Constants {
         // drive current/voltage -ginget  - removed these
         // drive measurement
 
-        private static final double moduleDeltaX = Units.inches_to_meters(
-            kDriveWheelbaseLengthMeters / 2.0
-        );
+        private static final double moduleDeltaX = kDriveWheelbaseLengthMeters / 2.0;
+
         private static final double moduleDeltaY = Units.inches_to_meters(
             kDriveWheelTrackWidthMeters / 2.0
         );
