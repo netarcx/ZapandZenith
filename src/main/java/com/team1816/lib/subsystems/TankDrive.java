@@ -133,7 +133,7 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
             );
 
         if (RobotBase.isSimulation()) {
-            // sketchy stuff
+            // sketchy stuff that makes the robot move in simulation
             double leftAdjDemand = mPeriodicIO.left_demand;
             double rightAdjDemand = mPeriodicIO.right_demand;
             if (mDriveControlState == DriveControlState.OPEN_LOOP) {
@@ -142,8 +142,7 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
             }
             var driveTrainErrorPercent = .05;
             mPeriodicIO.left_error = leftAdjDemand * driveTrainErrorPercent;
-            leftEncoderSimPosition +=
-                (leftAdjDemand - mPeriodicIO.left_error) * tickRatioPerLoop;
+            leftEncoderSimPosition += (leftAdjDemand - mPeriodicIO.left_error) * tickRatioPerLoop;
             rightEncoderSimPosition += rightAdjDemand * tickRatioPerLoop;
             mPeriodicIO.left_position_ticks = leftEncoderSimPosition;
             mPeriodicIO.right_position_ticks = rightEncoderSimPosition;

@@ -168,9 +168,9 @@ public class Shooter extends Subsystem implements PidProvider {
                 robotState.shooterState = STATE.COASTING;
             }
             if (state == STATE.REVVING) {
-                System.out.println(
-                    "shooter not at speed! actual state = " + robotState.shooterState
-                );
+                //                System.out.println(
+                //                    "shooter not at speed! actual state = " + robotState.shooterState
+                //                );
             }
         }
     }
