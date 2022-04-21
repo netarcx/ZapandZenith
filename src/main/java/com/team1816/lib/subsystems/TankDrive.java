@@ -133,7 +133,7 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
             );
 
         if (RobotBase.isSimulation()) {
-            // sketchy stuff that makes the robot move in simulation
+            // this is needed because differentialDriveOdometry has no updatePoseWithTime equivalent that SwerveDriveOdometry has
             double leftAdjDemand = mPeriodicIO.left_demand;
             double rightAdjDemand = mPeriodicIO.right_demand;
             if (mDriveControlState == DriveControlState.OPEN_LOOP) {
@@ -150,8 +150,8 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
             mPeriodicIO.left_velocity_ticks_per_100ms =
                 leftAdjDemand - mPeriodicIO.left_error;
             mPeriodicIO.right_velocity_ticks_per_100ms = rightAdjDemand;
+            // gyroDrift -= 0;
 
-            gyroDrift -= 0;
             // simulate gyro
             mPeriodicIO.gyro_heading_no_offset =
                 mPeriodicIO.gyro_heading_no_offset.rotateBy(
@@ -180,7 +180,7 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
             Units.inchesToMeters(getLeftEncoderDistance()),
             Units.inchesToMeters(getRightEncoderDistance())
         );
-        updateRobotPose();
+        updateRobotState();
     }
 
     public void updateTrajectoryVelocities(Double leftVel, Double rightVel) {
@@ -192,64 +192,9 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
         setVelocity(signal, DriveSignal.NEUTRAL);
     }
 
-    public Rotation2d getTrajectoryHeadings() {
-        if (mHeadings == null) {
-            System.out.println("headings are empty!");
-            return Constants.EmptyRotation;
-        } else if (mTrajectoryIndex > mHeadings.size() - 1) {
-            //System.out.println("heck the headings aren't long enough");
-            return Constants.EmptyRotation;
-        }
-        if (
-            getTrajectoryTimestamp() >
-            mTrajectory.getStates().get(mTrajectoryIndex).timeSeconds ||
-            mTrajectoryIndex == 0
-        ) mTrajectoryIndex++;
-        if (mTrajectoryIndex >= mHeadings.size()) {
-            System.out.println(mHeadings.get(mHeadings.size() - 1) + " = max");
-            return mHeadings.get(mHeadings.size() - 1);
-        }
-        double timeBetweenPoints =
-            (
-                mTrajectory.getStates().get(mTrajectoryIndex).timeSeconds -
-                mTrajectory.getStates().get(mTrajectoryIndex - 1).timeSeconds
-            );
-        Rotation2d heading;
-        heading =
-            mHeadings
-                .get(mTrajectoryIndex - 1)
-                .interpolate(
-                    mHeadings.get(mTrajectoryIndex),
-                    getTrajectoryTimestamp() / timeBetweenPoints
-                );
-        return heading;
-    }
-
     @Override
     public Pose2d getPose() {
         return robotState.field_to_vehicle;
-    }
-
-    private void updateRobotState() {
-        robotState.field_to_vehicle = tankOdometry.getPoseMeters();
-        robotState.chassis_speeds =
-            new ChassisSpeeds(
-                mPeriodicIO.chassisSpeed.vxMetersPerSecond,
-                mPeriodicIO.chassisSpeed.vyMetersPerSecond,
-                mPeriodicIO.chassisSpeed.omegaRadiansPerSecond
-            );
-        robotState.delta_field_to_vehicle =
-            new Twist2d(
-                // these three may be missing conversions from velocity to change in pose? (meters/s to x-y-theta/updateTime)
-                // not sure because field_to_vehicle is also being plugged directly into field as a value in meters
-                mPeriodicIO.chassisSpeed.vxMetersPerSecond * Constants.kLooperDt,
-                mPeriodicIO.chassisSpeed.vyMetersPerSecond * Constants.kLooperDt,
-                mPeriodicIO.chassisSpeed.omegaRadiansPerSecond * Constants.kLooperDt
-            );
-    }
-
-    private void updateRobotPose() {
-        robotState.field_to_vehicle = tankOdometry.getPoseMeters();
     }
 
     @Override
@@ -409,6 +354,30 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
     public synchronized void stop() {
         setOpenLoop(DriveSignal.NEUTRAL);
     }
+
+
+    private void updateRobotState() {
+        robotState.field_to_vehicle = tankOdometry.getPoseMeters();
+        robotState.chassis_speeds =
+            new ChassisSpeeds(
+                mPeriodicIO.chassisSpeed.vxMetersPerSecond,
+                mPeriodicIO.chassisSpeed.vyMetersPerSecond,
+                mPeriodicIO.chassisSpeed.omegaRadiansPerSecond
+            );
+        robotState.delta_field_to_vehicle =
+            new Twist2d(
+                // these three may be missing conversions from velocity to change in pose? (meters/s to x-y-theta/updateTime)
+                // not sure because field_to_vehicle is also being plugged directly into field as a value in meters
+                mPeriodicIO.chassisSpeed.vxMetersPerSecond * Constants.kLooperDt,
+                mPeriodicIO.chassisSpeed.vyMetersPerSecond * Constants.kLooperDt,
+                mPeriodicIO.chassisSpeed.omegaRadiansPerSecond * Constants.kLooperDt
+            );
+    }
+
+    private void updateRobotPose() {
+        robotState.field_to_vehicle = tankOdometry.getPoseMeters();
+    }
+
 
     @Override
     public boolean checkSystem() {

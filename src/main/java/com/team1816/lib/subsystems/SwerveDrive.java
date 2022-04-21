@@ -93,7 +93,7 @@ public class SwerveDrive extends Drive implements SwerveDrivetrain, PidProvider 
                     )
                 );
             // calculate rotation with gyro drift
-            gyroDrift -= 0;
+            // gyroDrift -= 0;
             mPeriodicIO.gyro_heading_no_offset =
                 mPeriodicIO.gyro_heading_no_offset.rotateBy(
                     Rotation2d.fromDegrees(gyroDrift)

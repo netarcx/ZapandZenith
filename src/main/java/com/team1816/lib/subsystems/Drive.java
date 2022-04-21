@@ -63,7 +63,7 @@ public abstract class Drive
     protected boolean pigeonNeedsReset = false;
 
     // Simulator
-    protected double gyroDrift;
+    protected double gyroDrift = 0;
     protected final double robotWidthTicks =
         inchesPerSecondToTicksPer100ms(Constants.kDriveWheelTrackWidthInches) * Math.PI;
 
