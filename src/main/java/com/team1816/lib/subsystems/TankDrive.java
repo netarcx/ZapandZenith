@@ -142,7 +142,8 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
             }
             var driveTrainErrorPercent = .05;
             mPeriodicIO.left_error = leftAdjDemand * driveTrainErrorPercent;
-            leftEncoderSimPosition += (leftAdjDemand - mPeriodicIO.left_error) * tickRatioPerLoop;
+            leftEncoderSimPosition +=
+                (leftAdjDemand - mPeriodicIO.left_error) * tickRatioPerLoop;
             rightEncoderSimPosition += rightAdjDemand * tickRatioPerLoop;
             mPeriodicIO.left_position_ticks = leftEncoderSimPosition;
             mPeriodicIO.right_position_ticks = rightEncoderSimPosition;
@@ -316,9 +317,6 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
         if (mDriveControlState != Drive.DriveControlState.OPEN_LOOP) {
             mDriveControlState = Drive.DriveControlState.OPEN_LOOP;
         }
-
-        mPeriodicIO.left_demand = driveSignal.getLeft();
-        mPeriodicIO.right_demand = driveSignal.getRight();
     }
 
     /**
