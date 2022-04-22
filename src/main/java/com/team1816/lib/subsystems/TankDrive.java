@@ -355,7 +355,6 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
         setOpenLoop(DriveSignal.NEUTRAL);
     }
 
-
     private void updateRobotState() {
         robotState.field_to_vehicle = tankOdometry.getPoseMeters();
         robotState.chassis_speeds =
@@ -377,7 +376,6 @@ public class TankDrive extends Drive implements DifferentialDrivetrain {
     private void updateRobotPose() {
         robotState.field_to_vehicle = tankOdometry.getPoseMeters();
     }
-
 
     @Override
     public boolean checkSystem() {
