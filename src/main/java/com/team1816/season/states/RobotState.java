@@ -29,6 +29,7 @@ public class RobotState {
     public Spindexer.STATE spinState = Spindexer.STATE.STOP;
     public Elevator.STATE elevatorState = Elevator.STATE.STOP;
 
+
     public RobotState() {
         SmartDashboard.putData("Field", field);
         reset();
