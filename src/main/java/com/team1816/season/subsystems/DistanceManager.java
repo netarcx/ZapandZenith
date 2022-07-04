@@ -16,7 +16,6 @@ public class DistanceManager {
     public DistanceManager() {
         lastBucketIndex = 0;
         flatBuckets = true; // set here whether to use flat bucket values
-        //        allowBucketOffset = false;
         if (flatBuckets) {
             buckets = flat_buckets;
         } else {
@@ -68,14 +67,14 @@ public class DistanceManager {
     private final Entry[] flat_buckets = new Entry[] {
         new Entry(80, 0, Shooter.NEAR_VELOCITY, 0),
         new Entry(105, 0, 7600, 0),
-        new Entry(115, 0, 7900, 0),
-        new Entry(125, 0, 8300, 0),
-        new Entry(135, 0, 8300, 0),
+        new Entry(115, 0, 8100, 0),
+        new Entry(125, 0, 8800, 0),
+        new Entry(135, 0, 8600, 0),
         new Entry(145, 0, 8700, 0),
-        new Entry(155, 0, 9050.5, 0),
-        new Entry(165, 0, 9525, 0),
-        new Entry(175, 0, 9910, 0),
-        new Entry(190, 0, 11000, 0),
+        new Entry(155, 0, 9350.5, 0),
+        new Entry(165, 0, 9825, 0),
+        new Entry(175, 0, 10210, 0),
+        new Entry(190, 0, 11200, 0),
         new Entry(200, 0, 10240, 0),
         new Entry(210, 0, 11175, 0),
         new Entry(230, 0, 11875, 0),
@@ -99,7 +98,9 @@ public class DistanceManager {
                 return bucket.calculateAndUpdate(distance);
             }
         }
-        return 52.5 * distance + 850; // this was the else statement at the end
+        SmartDashboard.putNumber("Camera/Last Distance", distance);
+        System.out.println("distance value too large!!");
+        return Shooter.MID_VELOCITY; // this was the else statement at the end
     }
 
     public void incrementBucket(double incrVal) {
@@ -126,13 +127,6 @@ public class DistanceManager {
         return .5;
     }
 
-    private double getHoodRetracted(double distance) {
-        if (distance < 90) {
-            return 0;
-        }
-        return 1;
-    }
-
     public double getOutput(double distance, SUBSYSTEM subsystem) {
         switch (subsystem) {
             case SPINDEXER:
@@ -141,8 +135,6 @@ public class DistanceManager {
                 return getElevatorOutput(distance);
             case SHOOTER:
                 return getShooterVelocity(distance);
-            case HOOD:
-                return getHoodRetracted(distance);
         }
         System.out.println("not a SUBSYSTEM!");
         return 0;
@@ -152,7 +144,6 @@ public class DistanceManager {
         SPINDEXER,
         ELEVATOR,
         SHOOTER,
-        HOOD,
     }
 
     public void outputBucketOffsets() {

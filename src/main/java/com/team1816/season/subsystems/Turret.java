@@ -1,11 +1,12 @@
 package com.team1816.season.subsystems;
 
-import com.ctre.phoenix.motorcontrol.IMotorControllerEnhanced;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.team1816.lib.hardware.PIDSlotConfiguration;
+import com.team1816.lib.hardware.components.motor.IGreenMotor;
 import com.team1816.lib.hardware.components.motor.IMotorSensor;
+import com.team1816.lib.loops.AsyncTimer;
 import com.team1816.lib.math.PoseUtil;
 import com.team1816.lib.subsystems.PidProvider;
 import com.team1816.lib.subsystems.Subsystem;
@@ -19,32 +20,37 @@ import edu.wpi.first.wpilibj.Timer;
 @Singleton
 public class Turret extends Subsystem implements PidProvider {
 
-    public static final double TURRET_JOG_SPEED = 0.15;
-    public static final double CARDINAL_SOUTH = 0; // deg
-    public static final double CARDINAL_EAST = 270; // deg
-    public static final double CARDINAL_NORTH = 180; // deg
-    public static final double CARDINAL_WEST = 90; // deg
-    public static final String NAME = "turret";
-    private static int HALF_ABS_ENCPPR;
-    public static int TURRET_LIMIT_REVERSE =
-        ((int) factory.getConstant(NAME, "revLimit"));
-    public static int TURRET_LIMIT_FORWARD =
-        ((int) factory.getConstant(NAME, "fwdLimit"));
-    public final int ABS_TICKS_SOUTH;
-    public static int ZERO_OFFSET; //used to make sure turret tick range is non-negative
-
     // Constants
+    public static final String NAME = "turret";
+    public static final double JOG_SPEED = 0.15;
+    public static final double SOUTH = 0; // deg - relative to vehicle NOT FIELD
+    public static final double EAST = 270; // deg - relative to vehicle NOT FIELD
+    public static final double NORTH = 180; // deg - relative to vehicle NOT FIELD
+    public static final double WEST = 90; // deg - relative to vehicle NOT FIELD
+    public final int REV_LIMIT = Math.min(
+        (int) factory.getConstant(NAME, "fwdLimit"),
+        ((int) factory.getConstant(NAME, "revLimit"))
+    );
+    public final int FWD_LIMIT = Math.max(
+        (int) factory.getConstant(NAME, "fwdLimit"),
+        ((int) factory.getConstant(NAME, "revLimit"))
+    );
+    public static int REV_WRAPAROUND_POINT; // lowest allowed tick value before turret masks (+turretPPR)
+    public static int FWD_WRAPAROUND_POINT; // highest allowed tick value before turret masks (-turretPPR)
+    public static int ZERO_OFFSET; // used to make sure turret tick range is non-negative
+    public final int ABS_TICKS_SOUTH; // abs encoder count at cardinal SOUTH
+    public static int ABS_PPR;
+    public static int TURRET_PPR;
+    private final double ENC_RATIO;
+    public final double DELTA_X_SCALAR;
+
     private static final int kPrimaryCloseLoop = 0;
     private static final int kPIDGyroIDx = 0;
     private static final int kPIDVisionIDx = 0;
-    public static int TURRET_ABS_ENCODER_PPR = 4096;
-    public static int TURRET_PPR;
-    private final int TURRET_MASK;
-    private final double TURRET_ENC_RATIO;
-    public final int ALLOWABLE_ERROR_TICKS;
+    private final PIDSlotConfiguration pidConfig;
 
     // Components
-    private final IMotorControllerEnhanced turret;
+    private final IGreenMotor turret;
 
     @Inject
     private static Camera camera;
@@ -52,66 +58,66 @@ public class Turret extends Subsystem implements PidProvider {
     @Inject
     private static LedManager led;
 
-    private final String pidSlot = "slot0";
-    private final double kP;
-    private final double kI;
-    private final double kD;
-    private final double kF;
     // State
-    private static int desiredTurretPos = 0;
-    private static int followingTurretPos = 0;
+    private int desiredPos = 0;
+    private int followingPos = 0;
     private int visionCorroboration = 0;
     private double turretSpeed;
     private boolean outputsChanged = true;
-    private static ControlMode controlMode;
+    private ControlMode controlMode;
+    private final AsyncTimer waitForSnap = new AsyncTimer(
+        .25,
+        () -> {
+            followingPos =
+                (int) (getActualTurretPositionTicks() + cameraFollowingOffset());
+            System.out.println("done aiming!");
+            outputsChanged = true;
+        }
+    );
 
     public Turret() {
         super(NAME);
         this.turret = factory.getMotor(NAME, "turret");
-        TURRET_ABS_ENCODER_PPR = (int) factory.getConstant(NAME, "encPPR");
-        TURRET_PPR = (int) factory.getConstant(NAME, "turretPPR");
-        TURRET_MASK = TURRET_PPR - 1;
-        TURRET_ENC_RATIO = (double) TURRET_PPR / TURRET_ABS_ENCODER_PPR;
-        ABS_TICKS_SOUTH = ((int) factory.getConstant(NAME, "absPosTicksSouth"));
-        HALF_ABS_ENCPPR = TURRET_ABS_ENCODER_PPR / 2 - HALF_ABS_ENCPPR;
+        DELTA_X_SCALAR = factory.getConstant(NAME, "deltaXScalar", 1);
+
         ZERO_OFFSET = (int) factory.getConstant(NAME, "zeroOffset"); //add offset to keep turret in positive range
+        ABS_TICKS_SOUTH = ((int) factory.getConstant(NAME, "absPosTicksSouth"));
+        ABS_PPR = (int) factory.getConstant(NAME, "encPPR");
+        TURRET_PPR = (int) factory.getConstant(NAME, "turretPPR");
+        ENC_RATIO = (double) TURRET_PPR / ABS_PPR;
+
+        int MASK = 0;
+        if (Math.abs(REV_LIMIT - FWD_LIMIT) > TURRET_PPR) {
+            MASK = Math.abs((REV_LIMIT + TURRET_PPR) - (FWD_LIMIT)) / 2; // this value is truncated
+        }
+        FWD_WRAPAROUND_POINT = FWD_LIMIT + MASK;
+        REV_WRAPAROUND_POINT = REV_LIMIT - MASK;
+
         turret.setNeutralMode(NeutralMode.Brake);
 
-        PIDSlotConfiguration pidConfig = factory.getPidSlotConfig(NAME, pidSlot);
-        this.kP = pidConfig.kP;
-        this.kI = pidConfig.kI;
-        this.kD = pidConfig.kD;
-        this.kF = pidConfig.kF;
-        ALLOWABLE_ERROR_TICKS = pidConfig.allowableError.intValue();
         // Position Control
         double peakOutput = 0.75;
-
+        pidConfig = factory.getPidSlotConfig(NAME);
         turret.configPeakOutputForward(peakOutput, Constants.kCANTimeoutMs);
         turret.configNominalOutputForward(0, Constants.kCANTimeoutMs);
         turret.configNominalOutputReverse(0, Constants.kCANTimeoutMs);
         turret.configPeakOutputReverse(-peakOutput, Constants.kCANTimeoutMs);
         turret.configAllowableClosedloopError(
             kPIDGyroIDx,
-            ALLOWABLE_ERROR_TICKS,
+            pidConfig.allowableError.intValue(),
             Constants.kCANTimeoutMs
         );
         turret.configAllowableClosedloopError(
             kPIDVisionIDx,
-            ALLOWABLE_ERROR_TICKS,
+            pidConfig.allowableError.intValue(),
             Constants.kCANTimeoutMs
         );
 
         // Soft Limits
         turret.configForwardSoftLimitEnable(true, Constants.kCANTimeoutMs);
         turret.configReverseSoftLimitEnable(true, Constants.kCANTimeoutMs);
-        turret.configForwardSoftLimitThreshold(
-            TURRET_LIMIT_FORWARD,
-            Constants.kCANTimeoutMs
-        ); // Forward = MAX
-        turret.configReverseSoftLimitThreshold(
-            TURRET_LIMIT_REVERSE,
-            Constants.kCANTimeoutMs
-        ); // Reverse = MIN
+        turret.configForwardSoftLimitThreshold(FWD_LIMIT, Constants.kCANTimeoutMs); // Forward = MAX
+        turret.configReverseSoftLimitThreshold(REV_LIMIT, Constants.kCANTimeoutMs); // Reverse = MIN
         turret.overrideLimitSwitchesEnable(true);
         turret.overrideSoftLimitsEnable(true);
     }
@@ -134,16 +140,17 @@ public class Turret extends Subsystem implements PidProvider {
     public synchronized void zeroSensors() {
         if (turret instanceof IMotorSensor) {
             var sensors = (IMotorSensor) turret;
-            var absSensorVal = sensors.getPulseWidthPosition(); // absolute
-            var offset = ZERO_OFFSET - absSensorVal + HALF_ABS_ENCPPR;
+            int halfAbsPPR = ABS_PPR / 2;
+            int absSensorVal = sensors.getPulseWidthPosition(); // absolute
+            int offset = ZERO_OFFSET - absSensorVal + halfAbsPPR;
 
             // It is safe to reset quadrature if turret enc reads ~0 (on startup)
             if (
-                Math.abs(sensors.getQuadraturePosition()) < HALF_ABS_ENCPPR ||
-                (int) TURRET_ENC_RATIO == 1
+                Math.abs(sensors.getQuadraturePosition()) < halfAbsPPR ||
+                (int) ENC_RATIO == 1
             ) {
                 //second check - don't zero if abs enc not in viable range
-                if (absSensorVal > -1 && absSensorVal < TURRET_ABS_ENCODER_PPR) {
+                if (absSensorVal > -1 && absSensorVal < ABS_PPR) {
                     sensors.setQuadraturePosition(offset);
                     System.out.println("Zeroing turret limits! Offset: " + offset);
                 } else {
@@ -165,7 +172,10 @@ public class Turret extends Subsystem implements PidProvider {
     public void setControlMode(ControlMode controlMode) {
         if (this.controlMode != controlMode) {
             outputsChanged = true;
-            if (controlMode == ControlMode.CAMERA_FOLLOWING) {
+            if (
+                controlMode == ControlMode.CAMERA_FOLLOWING ||
+                controlMode == ControlMode.CAMERA_SNAP
+            ) {
                 if (Constants.kUseVision) {
                     this.controlMode = controlMode;
                     turret.selectProfileSlot(kPIDVisionIDx, 0);
@@ -177,7 +187,7 @@ public class Turret extends Subsystem implements PidProvider {
             } else {
                 this.controlMode = controlMode;
                 turret.selectProfileSlot(kPIDGyroIDx, 0);
-                camera.setCameraEnabled(false);
+                camera.setCameraEnabled(controlMode == ControlMode.MANUAL);
                 if (controlMode == ControlMode.MANUAL) {
                     led.indicateStatus(LedManager.RobotStatus.MANUAL_TURRET);
                 } else {
@@ -189,23 +199,8 @@ public class Turret extends Subsystem implements PidProvider {
     }
 
     @Override
-    public double getKP() {
-        return kP;
-    }
-
-    @Override
-    public double getKI() {
-        return kI;
-    }
-
-    @Override
-    public double getKD() {
-        return kD;
-    }
-
-    @Override
-    public double getKF() {
-        return kF;
+    public PIDSlotConfiguration getPIDConfig() {
+        return pidConfig;
     }
 
     public void setTurretSpeed(double speed) {
@@ -218,9 +213,8 @@ public class Turret extends Subsystem implements PidProvider {
 
     private synchronized void setTurretPosition(double position) {
         //Since we are using position we need ensure value stays in one rotation
-        if (desiredTurretPos != (int) position) {
-            System.out.println("setting desiredTurretPos to " + position);
-            desiredTurretPos = (int) position;
+        if (desiredPos != (int) position) {
+            desiredPos = (int) position;
             outputsChanged = true;
         }
     }
@@ -228,13 +222,19 @@ public class Turret extends Subsystem implements PidProvider {
     // CCW positive - 0 to 360
     public synchronized void setTurretAngle(double angle) {
         setControlMode(ControlMode.POSITION);
+        System.out.println("setting turret angle: " + angle);
         setTurretPosition(convertTurretDegreesToTicks(angle));
-        followingTurretPos = desiredTurretPos;
+        followingPos = desiredPos;
+    }
+
+    public synchronized void snapWithCamera() {
+        waitForSnap.reset();
+        setControlMode(ControlMode.CAMERA_SNAP);
     }
 
     public synchronized void setFollowingAngle(double angle) {
         if (angle < 0) {
-            angle = angle + 360; // if angle is negative, wrap around - we only deal with values from 0 to 360
+            angle += 360; // if angle is negative, wrap around - we only deal with values from 0 to 360
         }
         setTurretPosition(convertTurretDegreesToTicks(angle));
     }
@@ -260,9 +260,9 @@ public class Turret extends Subsystem implements PidProvider {
 
     public double getTargetPosition() {
         if (controlMode == ControlMode.POSITION) {
-            return desiredTurretPos;
+            return desiredPos;
         }
-        return followingTurretPos;
+        return followingPos;
     }
 
     public double getPositionError() {
@@ -271,10 +271,11 @@ public class Turret extends Subsystem implements PidProvider {
 
     @Override
     public void readFromHardware() {
-        desiredTurretPos %= TURRET_PPR;
-        followingTurretPos %= TURRET_PPR;
+        if (followingPos > 2 * TURRET_PPR) {
+            followingPos %= TURRET_PPR;
+        }
 
-        robotState.vehicle_to_turret =
+        robotState.vehicleToTurret =
             Rotation2d.fromDegrees(getActualTurretPositionDegrees());
     }
 
@@ -283,26 +284,29 @@ public class Turret extends Subsystem implements PidProvider {
         switch (controlMode) {
             case CAMERA_FOLLOWING:
                 autoHome();
-                positionControl(followingTurretPos);
+                positionControl(followingPos);
                 break;
             case FIELD_FOLLOWING:
                 trackGyro();
-                positionControl(followingTurretPos);
+                positionControl(followingPos);
                 break;
             case CENTER_FOLLOWING:
                 trackCenter();
-                positionControl(followingTurretPos);
+                positionControl(followingPos);
                 break;
             case ABSOLUTE_FOLLOWING:
                 trackAbsolute();
-                positionControl(followingTurretPos);
+                positionControl(followingPos);
                 break;
             case ABSOLUTE_MADNESS:
                 autoHomeWithOffset(motionOffset());
-                positionControl(followingTurretPos);
+                positionControl(followingPos);
                 break;
+            case CAMERA_SNAP:
+                snapControl();
+                positionControl(followingPos);
             case POSITION:
-                positionControl(desiredTurretPos);
+                positionControl(desiredPos);
                 break;
             case MANUAL:
                 manualControl();
@@ -312,12 +316,12 @@ public class Turret extends Subsystem implements PidProvider {
 
     private int cameraFollowingOffset() {
         var delta = -camera.getDeltaX();
-        return ((int) (delta * 26)) - ABS_TICKS_SOUTH;
+        return ((int) (delta * DELTA_X_SCALAR));
     }
 
     private int fieldFollowingOffset() {
         return -convertTurretDegreesToTicks( // currently negated because motor is running counterclockwise
-            robotState.field_to_vehicle.getRotation().getDegrees()
+            robotState.fieldToVehicle.getRotation().getDegrees()
         );
     }
 
@@ -326,20 +330,19 @@ public class Turret extends Subsystem implements PidProvider {
             Constants.fieldCenterY - robotState.getFieldToTurretPos().getY();
         double adjacent =
             Constants.fieldCenterX - robotState.getFieldToTurretPos().getX();
-        double turretAngle = 0;
-        turretAngle = Math.atan(opposite / adjacent);
+        double turretAngle = Math.atan(opposite / adjacent);
         if (adjacent < 0) turretAngle += Math.PI;
         return convertTurretDegreesToTicks(Units.radiansToDegrees(turretAngle));
     }
 
     private int motionOffset() {
         Translation2d shooterAxis = new Translation2d(
-            robotState.shooterSpeed,
+            robotState.shooterMPS,
             robotState.getLatestFieldToTurret()
         );
         Translation2d driveAxis = new Translation2d(
-            robotState.chassis_speeds.vxMetersPerSecond,
-            robotState.chassis_speeds.vyMetersPerSecond
+            robotState.deltaVehicle.vxMetersPerSecond,
+            robotState.deltaVehicle.vyMetersPerSecond
         );
         Translation2d predictedTrajectory = driveAxis.unaryMinus().plus(shooterAxis);
         double motionOffsetAngle = PoseUtil.getAngleBetween(
@@ -355,35 +358,31 @@ public class Turret extends Subsystem implements PidProvider {
 
     private void autoHome() {
         var cameraOffset = cameraFollowingOffset();
-        if (cameraOffset > TURRET_PPR / 3) {
-            cameraOffset = 0;
-        }
-        int adj = followingTurretPos + cameraOffset;
-        //        if (adj > TURRET_LIMIT_FORWARD - ZERO_OFFSET) {
-        //            adj = TURRET_LIMIT_FORWARD - ZERO_OFFSET;
-        //        } else if (adj < TURRET_LIMIT_REVERSE - ZERO_OFFSET) {
-        //            adj = TURRET_LIMIT_REVERSE - ZERO_OFFSET;
-        //        }
-        if (adj != followingTurretPos) {
-            followingTurretPos = adj;
+        int adj = followingPos + cameraOffset;
+        if (adj != followingPos) {
+            followingPos = adj;
             outputsChanged = true;
         }
     }
 
     private void autoHomeWithOffset(int offset) {
         var cameraOffset = cameraFollowingOffset();
-        int adj = followingTurretPos + cameraOffset + offset;
-        if (adj != followingTurretPos) {
-            followingTurretPos = adj;
+        int adj = followingPos + cameraOffset + offset;
+        if (adj != followingPos) {
+            followingPos = adj;
             outputsChanged = true;
         }
     }
 
+    public void snapControl() {
+        waitForSnap.update();
+    }
+
     private void trackGyro() {
         int fieldTickOffset = fieldFollowingOffset();
-        int adj = (desiredTurretPos + fieldTickOffset);
-        if (adj != followingTurretPos) {
-            followingTurretPos = adj;
+        int adj = (desiredPos + fieldTickOffset);
+        if (adj != followingPos) {
+            followingPos = adj;
             outputsChanged = true;
         }
     }
@@ -392,10 +391,9 @@ public class Turret extends Subsystem implements PidProvider {
         int fieldTickOffset = fieldFollowingOffset();
         int centerOffset = centerFollowingOffset();
 
-        int adj =
-            (desiredTurretPos + fieldTickOffset + centerOffset + visionCorroboration);
-        if (adj != followingTurretPos) {
-            followingTurretPos = adj;
+        int adj = (desiredPos + fieldTickOffset + centerOffset + visionCorroboration);
+        if (adj != followingPos) {
+            followingPos = adj;
             outputsChanged = true;
         }
     }
@@ -405,19 +403,22 @@ public class Turret extends Subsystem implements PidProvider {
         int centerOffset = centerFollowingOffset();
         int motionOffset = motionOffset();
 
-        int adj = (desiredTurretPos + fieldTickOffset + centerOffset + motionOffset);
-        if (adj != followingTurretPos) {
-            followingTurretPos = adj;
+        int adj = (desiredPos + fieldTickOffset + centerOffset + motionOffset);
+        if (adj != followingPos) {
+            followingPos = adj;
             outputsChanged = true;
         }
     }
 
     private void positionControl(int rawPos) {
-        int adjPos = (rawPos + ABS_TICKS_SOUTH + ZERO_OFFSET) % TURRET_MASK;
-        if (adjPos < 0) {
-            adjPos += TURRET_MASK;
-        }
         if (outputsChanged) {
+            if (rawPos > FWD_WRAPAROUND_POINT) {
+                rawPos -= TURRET_PPR;
+            } else if (rawPos < REV_WRAPAROUND_POINT) {
+                rawPos += TURRET_PPR;
+            }
+            int adjPos = (rawPos + ABS_TICKS_SOUTH + ZERO_OFFSET);
+
             turret.set(com.ctre.phoenix.motorcontrol.ControlMode.Position, adjPos);
             outputsChanged = false;
         }
@@ -425,25 +426,16 @@ public class Turret extends Subsystem implements PidProvider {
 
     private void manualControl() {
         if (outputsChanged) {
-            //            if (turretSpeed == 0) {
-            //                turret.set(
-            //                    com.ctre.phoenix.motorcontrol.ControlMode.Position,
-            //                    getActualTurretPositionTicks() + 200 * turret.getMotorOutputPercent()
-            //                );
-            //            } else {
             turret.set(
                 com.ctre.phoenix.motorcontrol.ControlMode.PercentOutput,
                 turretSpeed
             );
-            //            }
             outputsChanged = false;
         }
     }
 
     @Override
-    public void stop() {
-        camera.setCameraEnabled(false);
-    }
+    public void stop() {}
 
     @Override
     public boolean checkSystem() {
@@ -451,13 +443,13 @@ public class Turret extends Subsystem implements PidProvider {
         turret.set(com.ctre.phoenix.motorcontrol.ControlMode.PercentOutput, .2);
         Timer.delay(2);
         var ticks = getActualTurretPositionTicks();
-        var diff = Math.abs(ticks - TURRET_LIMIT_FORWARD);
+        var diff = Math.abs(ticks - FWD_LIMIT);
         System.out.println(" + TICKS: " + ticks + "  ERROR: " + diff);
         passed = diff <= 50;
         turret.set(com.ctre.phoenix.motorcontrol.ControlMode.PercentOutput, -.2);
         Timer.delay(2);
         ticks = getActualTurretPositionTicks();
-        diff = Math.abs(ticks - TURRET_LIMIT_REVERSE);
+        diff = Math.abs(ticks - REV_LIMIT);
         System.out.println(" - TICKS: " + ticks + "  ERROR: " + diff);
         passed = passed & diff <= 50;
         turret.set(com.ctre.phoenix.motorcontrol.ControlMode.PercentOutput, 0);
@@ -470,6 +462,7 @@ public class Turret extends Subsystem implements PidProvider {
         CENTER_FOLLOWING,
         ABSOLUTE_FOLLOWING,
         ABSOLUTE_MADNESS,
+        CAMERA_SNAP,
         POSITION,
         MANUAL,
     }

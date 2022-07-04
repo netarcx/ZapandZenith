@@ -50,7 +50,6 @@ public class Superstructure {
     private boolean revving;
     private boolean firing;
     private final boolean useVision;
-    private final boolean usePoseTrack;
     private double maxAllowablePoseError = factory.getConstant(
         "maxAllowablePoseError",
         0.2
@@ -62,11 +61,10 @@ public class Superstructure {
         revving = false;
         firing = false;
         useVision = Constants.kUseVision;
-        usePoseTrack = Constants.kUsePoseTrack;
     }
 
     public void setStopped(boolean notCoasting) {
-        collector.setDesiredState(Collector.STATE.STOP); // stop states auto-set subsystems to stop moving
+        collector.setDesiredState(Collector.STATE.STOP);
         elevator.setDesiredState(Elevator.STATE.STOP);
         if (notCoasting) {
             shooter.setDesiredState(Shooter.STATE.STOP);
@@ -88,6 +86,7 @@ public class Superstructure {
     public void setCollecting(boolean collecting, boolean backSpin) {
         this.collecting = collecting;
         updateDesiredSpindexer(backSpin);
+        updateDesiredElevator();
         updateDesiredCollector(backSpin);
     }
 
@@ -100,9 +99,8 @@ public class Superstructure {
         System.out.println("struct - rev " + revving);
         if (revving) {
             shooter.setDesiredState(Shooter.STATE.REVVING);
-            if (Camera.cameraEnabled && !manual) {
+            if (camera.isEnabled() && !manual) {
                 shooter.setVelocity(getDistance(DistanceManager.SUBSYSTEM.SHOOTER));
-                shooter.setHood(getDistance(DistanceManager.SUBSYSTEM.HOOD) > 0);
             } else {
                 shooter.setVelocity(shooterVel);
             }
@@ -154,10 +152,8 @@ public class Superstructure {
     public void updateDesiredElevator() {
         if (firing) {
             elevator.setDesiredState(Elevator.STATE.FIRE);
-        } else if (revving) {
-            elevator.setDesiredState(Elevator.STATE.FLUSH);
         } else {
-            elevator.setDesiredState(Elevator.STATE.STOP);
+            elevator.setDesiredState(Elevator.STATE.INTAKE);
         }
     }
 
@@ -174,8 +170,8 @@ public class Superstructure {
 
     public void shootWhileMoving(double currentCamDist) {
         Translation2d chassisVelocity = new Translation2d(
-            robotState.chassis_speeds.vxMetersPerSecond,
-            robotState.chassis_speeds.vyMetersPerSecond
+            robotState.deltaVehicle.vxMetersPerSecond,
+            robotState.deltaVehicle.vyMetersPerSecond
         );
         Translation2d shooterDirection = new Translation2d( //important to make sure that this is a unit vector
             1,
@@ -213,21 +209,21 @@ public class Superstructure {
         Pose2d newRobotPose = Constants.targetPos.transformBy(
             new Transform2d(
                 deltaToHub.unaryMinus(),
-                robotState.field_to_vehicle.getRotation()
+                robotState.fieldToVehicle.getRotation()
             )
         );
         if (
             Math.abs(
                 Math.hypot(
-                    robotState.field_to_vehicle.getX() - newRobotPose.getX(),
-                    robotState.field_to_vehicle.getY() - newRobotPose.getY()
+                    robotState.fieldToVehicle.getX() - newRobotPose.getX(),
+                    robotState.fieldToVehicle.getY() - newRobotPose.getY()
                 )
             ) >
             maxAllowablePoseError
         ) {
             System.out.println(newRobotPose + " = new robot pose");
             drive.resetOdometry(newRobotPose);
-            robotState.field_to_vehicle = newRobotPose;
+            robotState.fieldToVehicle = newRobotPose;
         }
     }
 }

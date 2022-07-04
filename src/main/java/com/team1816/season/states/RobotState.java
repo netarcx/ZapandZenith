@@ -15,12 +15,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class RobotState {
 
     public final Field2d field = new Field2d();
-    public Pose2d field_to_vehicle = Constants.EmptyPose;
-    public Pose2d estimated_field_to_vehicle = Constants.EmptyPose;
-    public Rotation2d vehicle_to_turret = Constants.EmptyRotation;
-    public Twist2d delta_field_to_vehicle = new Twist2d();
-    public ChassisSpeeds chassis_speeds = new ChassisSpeeds();
-    public double shooterSpeed = 0; // needs to be remapped - default value
+    public Pose2d fieldToVehicle = Constants.EmptyPose;
+    public Pose2d estimatedFieldToVehicle = Constants.EmptyPose;
+    public Rotation2d vehicleToTurret = Constants.EmptyRotation;
+    public ChassisSpeeds deltaVehicle = new ChassisSpeeds();
+    public double shooterMPS = 0; // needs to be remapped - default value
 
     // Superstructure ACTUAL states
     public Point visionPoint = new Point();
@@ -28,44 +27,59 @@ public class RobotState {
     public Shooter.STATE shooterState = Shooter.STATE.STOP;
     public Spindexer.STATE spinState = Spindexer.STATE.STOP;
     public Elevator.STATE elevatorState = Elevator.STATE.STOP;
+    public Cooler.STATE coolState = Cooler.STATE.WAIT;
+
+    public boolean overheating = false;
 
 
     public RobotState() {
         SmartDashboard.putData("Field", field);
-        reset();
+        resetPosition();
     }
 
     /**
      * Resets the field to robot transform (robot's position on the field)
      */
-    public synchronized void reset(
+    public synchronized void resetPosition(
         Pose2d initial_field_to_vehicle,
         Rotation2d initial_vehicle_to_turret
     ) {
-        reset(initial_field_to_vehicle);
-        vehicle_to_turret = initial_vehicle_to_turret;
+        resetPosition(initial_field_to_vehicle);
+        vehicleToTurret = initial_vehicle_to_turret;
     }
 
-    public synchronized void reset(Pose2d initial_field_to_vehicle) {
-        field_to_vehicle = initial_field_to_vehicle;
+    public synchronized void resetPosition(Pose2d initial_field_to_vehicle) {
+        fieldToVehicle = initial_field_to_vehicle;
     }
 
-    public synchronized void reset() {
-        reset(Constants.StartingPose);
+    public synchronized void resetPosition() {
+        resetPosition(Constants.StartingPose);
+    }
+
+    public synchronized void resetAllStates() {
+        collectorState = Collector.STATE.STOP;
+        spinState = Spindexer.STATE.STOP;
+        elevatorState = Elevator.STATE.STOP;
+        shooterState = Shooter.STATE.STOP;
+        coolState = Cooler.STATE.WAIT;
+        deltaVehicle = new ChassisSpeeds();
+        visionPoint = new Point();
+        shooterMPS = 0;
+        overheating = false;
     }
 
     public synchronized Pose2d getLatestFieldToVehicle() {
         // CCW rotation increases degrees
-        return field_to_vehicle;
+        return fieldToVehicle;
     }
 
     public Rotation2d getLatestFieldToTurret() {
-        return field_to_vehicle.getRotation().plus(vehicle_to_turret);
+        return fieldToVehicle.getRotation().plus(vehicleToTurret);
     }
 
     public synchronized Pose2d getFieldToTurretPos() {
         return new Pose2d(
-            field_to_vehicle
+            fieldToVehicle
                 .transformBy(
                     new Transform2d(new Translation2d(-.1, .1), Constants.EmptyRotation)
                 )
@@ -75,17 +89,25 @@ public class RobotState {
     }
 
     public double getEstimatedDistanceToGoal() {
-        double distanceToGoalMeters = field_to_vehicle
+        double estimatedDistanceToGoalMeters = fieldToVehicle
             .getTranslation()
             .getDistance(Constants.targetPos.getTranslation());
-        return Math.sqrt(
-            Math.pow(Units.metersToInches(distanceToGoalMeters), 2) + 5629.5
-        );
+        double distInches =
+            (
+                Math.sqrt(
+                    Units.metersToInches(estimatedDistanceToGoalMeters) *
+                    Units.metersToInches(estimatedDistanceToGoalMeters) +
+                    (Constants.kHeightFromCamToHub * Constants.kHeightFromCamToHub)
+                ) -
+                Constants.kTargetRadius
+            );
+        System.out.println("estimated distance = " + distInches);
+        return distInches;
     }
 
     public synchronized void outputToSmartDashboard() {
         //shuffleboard periodic updates should be here
-        field.setRobotPose(field_to_vehicle);
+        field.setRobotPose(fieldToVehicle);
         field.getObject(Turret.NAME).setPose(getFieldToTurretPos());
     }
 
@@ -94,14 +116,10 @@ public class RobotState {
 
         public double cX;
         public double cY;
-        public double dist;
-        public double deltaX;
 
         public Point() {
             cX = 0;
             cY = 0;
-            dist = 0;
-            deltaX = 0;
         }
     }
 }
