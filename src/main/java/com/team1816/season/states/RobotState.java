@@ -61,6 +61,7 @@ public class RobotState {
         spinState = Spindexer.STATE.STOP;
         elevatorState = Elevator.STATE.STOP;
         shooterState = Shooter.STATE.STOP;
+
         coolState = Cooler.STATE.WAIT;
         deltaVehicle = new ChassisSpeeds();
         visionPoint = new Point();

@@ -62,6 +62,7 @@ public class Robot extends TimedRobot {
     private final Camera camera;
     private final LedManager ledManager;
     private final DistanceManager distanceManager;
+    private final ZenithDriveShifter zenithShifter;
 
     // debugging / testing
     private final LatchedBoolean wantExecution = new LatchedBoolean();
@@ -96,6 +97,7 @@ public class Robot extends TimedRobot {
         infrastructure = injector.getInstance(Infrastructure.class);
         shooter = injector.getInstance(Shooter.class);
         cooler = injector.getInstance(Cooler.class);
+        zenithShifter = injector.getInstance(ZenithDriveShifter.class);
         robotState = injector.getInstance(RobotState.class);
         distanceManager = injector.getInstance(DistanceManager.class);
         ledManager = injector.getInstance(LedManager.class);
@@ -237,6 +239,8 @@ public class Robot extends TimedRobot {
 
             logger.finishInitialization();
 
+
+
             subsystemManager.setSubsystems(
                 drive,
                 elevator,
@@ -247,7 +251,8 @@ public class Robot extends TimedRobot {
                 climber,
                 camera,
                 ledManager,
-                cooler
+                cooler,
+                zenithShifter
             );
 
             subsystemManager.zeroSensors();
@@ -271,6 +276,10 @@ public class Robot extends TimedRobot {
                     createHoldAction(
                         controlBoard::getCollectorBackspin,
                         pressed -> superstructure.setCollecting(pressed, false)
+                    ),
+                    createHoldAction(
+                        controlBoard::getShifter,
+                        pressed -> superstructure.setZenithShifter(pressed)
                     ),
                     createAction(controlBoard::getUnlockClimber, climber::unlock),
                     createAction(

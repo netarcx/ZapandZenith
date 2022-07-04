@@ -27,3 +27,6 @@ public final class Main {
         RobotBase.startRobot(Robot::new);
     }
 }
+
+// Trent's General Notes
+// TODO: Learn how to create your own Yaml keys

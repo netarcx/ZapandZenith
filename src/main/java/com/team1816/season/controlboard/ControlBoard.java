@@ -198,4 +198,7 @@ public class ControlBoard implements IControlBoard {
     public boolean getHood() {
         return mButtonControlBoard.getHood();
     }
+
+    @Override
+    public boolean getShifter() {return mDriveControlBoard.getShifter();}
 }

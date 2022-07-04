@@ -25,6 +25,9 @@ public class Superstructure {
     private static Drive drive;
 
     @Inject
+    private static ZenithDriveShifter zenithShifter;
+
+    @Inject
     private static Turret turret;
 
     @Inject
@@ -49,6 +52,7 @@ public class Superstructure {
     private boolean collecting;
     private boolean revving;
     private boolean firing;
+    private boolean shifting;
     private final boolean useVision;
     private double maxAllowablePoseError = factory.getConstant(
         "maxAllowablePoseError",
@@ -61,6 +65,7 @@ public class Superstructure {
         revving = false;
         firing = false;
         useVision = Constants.kUseVision;
+        shifting = false;
     }
 
     public void setStopped(boolean notCoasting) {
@@ -81,6 +86,15 @@ public class Superstructure {
 
     public void setCollecting(boolean backSpin) {
         setCollecting(!collecting, backSpin);
+    }
+
+    public void setZenithShifter(boolean shifting) {
+        if(shifting){
+            zenithShifter.setHighGear();
+        }
+        else{
+            zenithShifter.setLowGear();
+        }
     }
 
     public void setCollecting(boolean collecting, boolean backSpin) {

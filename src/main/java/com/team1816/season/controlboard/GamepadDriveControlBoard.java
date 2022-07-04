@@ -90,4 +90,8 @@ public class GamepadDriveControlBoard implements IDriveControlBoard {
     public int getDriverClimber() {
         return 0;
     }
+
+    @Override
+    public boolean getShifter() {return mController.getButton(Controller.Button.L_JOYSTICK);}
+
 }
